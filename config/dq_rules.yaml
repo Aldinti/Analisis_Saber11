@@ -1,3 +1,22 @@
+# Catálogo de reglas de calidad de datos (fase F5a). Lo ejecuta el motor de F5b.
+#
+# Campos de cada regla:
+#   id              DQ-<DIMENSIÓN>-<nnn>, único
+#   dimension       integridad | completitud | unicidad | validez | consistencia | exactitud | integridad_referencial | privacidad | volumen
+#   tabla           tabla principal evaluada (silver_resultados, fact_resultado, agg_operativo_colegio, ...)
+#   descripcion     qué se verifica
+#   sql             (opcional) consulta DuckDB que devuelve UN valor escalar: la métrica de fallo.
+#                   Sin `sql`, la regla se evalúa en Python (contrato de columnas, conteos entre capas).
+#   metrica         conteo (filas/grupos que fallan) | proporcion (fracción 0..1 que falla). Por defecto: conteo
+#   umbral_max_fallos  la regla pasa si métrica <= umbral
+#   severidad       bloqueante (detiene la promoción a la capa siguiente) | advertencia (se informa)
+#
+# Parámetros: la SQL solo usa marcadores ${nombre} que el motor resuelve antes de ejecutar:
+#   ${k_min}                    settings.yaml -> privacy.k_min
+#   ${min_schools_comparative}  settings.yaml -> privacy.min_schools_comparative
+#   ${run_id}                   identificador de la ejecución en curso
+# Los valores que dependen de la fecha se calculan en SQL (p. ej. year(current_date)); nunca se escriben fijos.
+
 rules:
   - id: DQ-INT-001
     dimension: integridad
@@ -17,15 +36,20 @@ rules:
     dimension: completitud
     tabla: silver_resultados
     descripcion: Sin nulos en anio, nombre_colegio, puntaje_global, punt_*
-    sql: SELECT count(*) FROM silver_resultados WHERE anio IS NULL OR nombre_colegio IS NULL OR puntaje_global IS NULL
+    sql: >
+      SELECT count(*) FROM silver_resultados
+      WHERE anio IS NULL OR nombre_colegio IS NULL OR puntaje_global IS NULL
+         OR punt_lectura_critica IS NULL OR punt_matematicas IS NULL OR punt_sociales IS NULL
+         OR punt_ciencias IS NULL OR punt_ingles IS NULL
     severidad: bloqueante
     umbral_max_fallos: 0
 
   - id: DQ-COM-002
     dimension: completitud
     tabla: silver_resultados
-    descripcion: Nulos en sexo, estrato <= 5%
-    sql: SELECT count(*) FROM silver_resultados WHERE sexo IS NULL OR estrato IS NULL
+    descripcion: Proporción de filas con nulos en sexo o estrato <= 5 %
+    sql: SELECT coalesce(avg(CASE WHEN sexo IS NULL OR estrato IS NULL THEN 1.0 ELSE 0.0 END), 0) FROM silver_resultados
+    metrica: proporcion
     severidad: advertencia
     umbral_max_fallos: 0.05
 
@@ -40,8 +64,8 @@ rules:
   - id: DQ-VAL-001
     dimension: validez
     tabla: silver_resultados
-    descripcion: anio entre 2000 y 2026
-    sql: SELECT count(*) FROM silver_resultados WHERE anio NOT BETWEEN 2000 AND 2026
+    descripcion: anio entre 2000 y el año actual (calculado en tiempo de ejecución)
+    sql: SELECT count(*) FROM silver_resultados WHERE anio NOT BETWEEN 2000 AND year(current_date)
     severidad: bloqueante
     umbral_max_fallos: 0
 
@@ -87,15 +111,89 @@ rules:
     severidad: bloqueante
     umbral_max_fallos: 0
 
+  - id: DQ-CON-001
+    dimension: consistencia
+    tabla: silver_resultados
+    descripcion: cada colegio tiene una sola naturaleza y un solo modelo pedagogico por anio (cuenta pares colegio-anio inconsistentes)
+    sql: >
+      SELECT count(*) FROM (
+        SELECT nombre_colegio, anio
+        FROM silver_resultados
+        GROUP BY nombre_colegio, anio
+        HAVING count(DISTINCT naturaleza_colegio) > 1 OR count(DISTINCT modelo_pedagogico) > 1
+      )
+    severidad: advertencia
+    umbral_max_fallos: 0
+
+  - id: DQ-CON-002
+    dimension: consistencia
+    tabla: silver_resultados
+    descripcion: categorias sin variantes de tildes, mayusculas o espacios (cuenta valores canonicos con mas de una escritura)
+    sql: >
+      WITH valores AS (
+        SELECT 'pais' AS columna, pais AS valor FROM silver_resultados
+        UNION SELECT 'departamento', departamento FROM silver_resultados
+        UNION SELECT 'municipio', municipio FROM silver_resultados
+        UNION SELECT 'zona', zona FROM silver_resultados
+        UNION SELECT 'nombre_colegio', nombre_colegio FROM silver_resultados
+        UNION SELECT 'naturaleza_colegio', naturaleza_colegio FROM silver_resultados
+        UNION SELECT 'modelo_pedagogico', modelo_pedagogico FROM silver_resultados
+        UNION SELECT 'periodo', periodo FROM silver_resultados
+        UNION SELECT 'jornada', jornada FROM silver_resultados
+        UNION SELECT 'sexo', sexo FROM silver_resultados
+        UNION SELECT 'grupo', grupo FROM silver_resultados
+      )
+      SELECT count(*) FROM (
+        SELECT columna, lower(strip_accents(trim(valor))) AS clave
+        FROM valores
+        WHERE valor IS NOT NULL
+        GROUP BY columna, clave
+        HAVING count(DISTINCT valor) > 1
+      )
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
   - id: DQ-EXA-001
     dimension: exactitud
     tabla: silver_resultados
-    descripcion: consistencia matematica formula puntaje global
+    descripcion: proporcion de filas donde puntaje_global no coincide con la formula de areas
     sql: >
-      SELECT count(*) FROM silver_resultados
-      WHERE puntaje_global <> round(5.0 * (3.0 * (punt_lectura_critica + punt_matematicas + punt_sociales + punt_ciencias) + punt_ingles) / 13.0)
+      SELECT coalesce(avg(CASE WHEN puntaje_global <> round(5.0 * (3.0 * (punt_lectura_critica + punt_matematicas
+             + punt_sociales + punt_ciencias) + punt_ingles) / 13.0) THEN 1.0 ELSE 0.0 END), 0)
+      FROM silver_resultados
+    metrica: proporcion
     severidad: advertencia
     umbral_max_fallos: 0.01
+
+  - id: DQ-REF-001
+    dimension: integridad_referencial
+    tabla: fact_resultado
+    descripcion: claves foraneas de fact_resultado y fact_resultado_area existen en sus dimensiones (cuenta filas huerfanas)
+    sql: >
+      SELECT
+        (SELECT count(*) FROM fact_resultado f
+          LEFT JOIN dim_tiempo t ON f.tiempo_id = t.tiempo_id
+          LEFT JOIN dim_colegio c ON f.colegio_id = c.colegio_id
+          LEFT JOIN dim_ubicacion u ON f.ubicacion_id = u.ubicacion_id
+          LEFT JOIN dim_perfil_estudiante p ON f.perfil_id = p.perfil_id
+          WHERE t.tiempo_id IS NULL OR c.colegio_id IS NULL OR u.ubicacion_id IS NULL OR p.perfil_id IS NULL)
+      + (SELECT count(*) FROM fact_resultado_area fa
+          LEFT JOIN fact_resultado f ON fa.resultado_id = f.resultado_id
+          LEFT JOIN dim_area a ON fa.area_id = a.area_id
+          WHERE f.resultado_id IS NULL OR a.area_id IS NULL)
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-REF-002
+    dimension: integridad_referencial
+    tabla: seguridad_rectores
+    descripcion: todo colegio_id de la tabla de seguridad existe en dim_colegio
+    sql: >
+      SELECT count(*) FROM seguridad_rectores s
+      LEFT JOIN dim_colegio c ON s.colegio_id = c.colegio_id
+      WHERE c.colegio_id IS NULL
+    severidad: bloqueante
+    umbral_max_fallos: 0
 
   - id: DQ-PRI-001
     dimension: privacidad
@@ -107,7 +205,46 @@ rules:
   - id: DQ-PRI-002
     dimension: privacidad
     tabla: agg_operativo_colegio
-    descripcion: agregados operativos no muestran metricas en grupos con n < k_min
-    sql: SELECT count(*) FROM agg_operativo_colegio WHERE n < 5 AND promedio IS NOT NULL
+    descripcion: agregados sin metricas en celdas con n < k_min, ni comparativos con menos de min_schools_comparative colegios
+    sql: >
+      SELECT
+        (SELECT count(*) FROM agg_operativo_colegio
+          WHERE n < ${k_min}
+            AND (promedio IS NOT NULL OR p10 IS NOT NULL OR p25 IS NOT NULL OR p50 IS NOT NULL
+                 OR p75 IS NOT NULL OR p90 IS NOT NULL))
+      + (SELECT count(*) FROM agg_benchmark_distrito
+          WHERE (n < ${k_min} OR n_colegios < ${min_schools_comparative})
+            AND (promedio IS NOT NULL OR p25 IS NOT NULL OR p50 IS NOT NULL OR p75 IS NOT NULL))
     severidad: bloqueante
     umbral_max_fallos: 0
+
+  - id: DQ-PRI-003
+    dimension: privacidad
+    tabla: agg_operativo_colegio
+    descripcion: supresion complementaria (cuenta dimensiones colegio-anio-area con exactamente una celda suprimida)
+    sql: >
+      SELECT count(*) FROM (
+        SELECT colegio_id, anio, area, dimension
+        FROM agg_operativo_colegio
+        WHERE dimension <> 'Total'
+        GROUP BY colegio_id, anio, area, dimension
+        HAVING count(*) FILTER (WHERE suprimido) = 1
+      )
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VOL-001
+    dimension: volumen
+    tabla: silver_resultados
+    descripcion: variacion relativa de filas Silver frente a la ultima ejecucion exitosa (0 si no hay ejecucion previa)
+    sql: >
+      SELECT coalesce(
+        abs((SELECT count(*) FROM silver_resultados) - previa.filas)::DOUBLE / nullif(previa.filas, 0), 0)
+      FROM (
+        SELECT (SELECT filas FROM run_log
+                WHERE etapa = 'silver' AND estado = 'exitoso' AND run_id <> '${run_id}'
+                ORDER BY finalizado_utc DESC LIMIT 1) AS filas
+      ) AS previa
+    metrica: proporcion
+    severidad: advertencia
+    umbral_max_fallos: 0.30

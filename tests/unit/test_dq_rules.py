@@ -49,6 +49,15 @@ def con() -> duckdb.DuckDBPyConnection:
             punt_sociales, punt_ciencias, punt_ingles);
         UPDATE silver_resultados SET puntaje_global = round(5.0 * (3.0 * (punt_lectura_critica + punt_matematicas
             + punt_sociales + punt_ciencias) + punt_ingles) / 13.0);
+        -- Tipos exactos de Silver (TINYINT en áreas): las reglas deben operar sin desbordes.
+        ALTER TABLE silver_resultados ALTER anio TYPE SMALLINT;
+        ALTER TABLE silver_resultados ALTER estrato TYPE TINYINT;
+        ALTER TABLE silver_resultados ALTER puntaje_global TYPE SMALLINT;
+        ALTER TABLE silver_resultados ALTER punt_lectura_critica TYPE TINYINT;
+        ALTER TABLE silver_resultados ALTER punt_matematicas TYPE TINYINT;
+        ALTER TABLE silver_resultados ALTER punt_sociales TYPE TINYINT;
+        ALTER TABLE silver_resultados ALTER punt_ciencias TYPE TINYINT;
+        ALTER TABLE silver_resultados ALTER punt_ingles TYPE TINYINT;
 
         CREATE TABLE dim_tiempo AS SELECT 20232 AS tiempo_id;
         CREATE TABLE dim_colegio AS SELECT * FROM (VALUES (1), (2)) t(colegio_id);

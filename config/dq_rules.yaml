@@ -158,8 +158,9 @@ rules:
     tabla: silver_resultados
     descripcion: proporcion de filas donde puntaje_global no coincide con la formula de areas
     sql: >
-      SELECT coalesce(avg(CASE WHEN puntaje_global <> round(5.0 * (3.0 * (punt_lectura_critica + punt_matematicas
-             + punt_sociales + punt_ciencias) + punt_ingles) / 13.0) THEN 1.0 ELSE 0.0 END), 0)
+      SELECT coalesce(avg(CASE WHEN puntaje_global <> round(5.0 * (3.0 * CAST(punt_lectura_critica AS INTEGER)
+             + 3.0 * CAST(punt_matematicas AS INTEGER) + 3.0 * CAST(punt_sociales AS INTEGER)
+             + 3.0 * CAST(punt_ciencias AS INTEGER) + CAST(punt_ingles AS INTEGER)) / 13.0) THEN 1.0 ELSE 0.0 END), 0)
       FROM silver_resultados
     metrica: proporcion
     severidad: advertencia

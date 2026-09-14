@@ -690,11 +690,12 @@ Columnas Silver: `anio SMALLINT, periodo VARCHAR, jornada VARCHAR, pais, departa
 |---|---|
 | Objetivo | Sistema formal de reglas con umbrales y bloqueo |
 | Actividades | Catálogo YAML (`config/dq_rules.yaml`); motor que traduce reglas a SQL; resultados a `dq_results.parquet`; informe; gate con código de salida |
-| Entrada / Salida | Silver/Gold → `reports/quality/dq_<run_id>.md` |
+| Entrada / Salida | Silver/Gold → `data/metadata/dq_results.parquet` (una fila por regla evaluada) + `reports/quality/dq_<run_id>.md` + registro `dq_<capa>` en `run_log` |
+| Proceso (F5b) | `PYTHONPATH=src python -m saber11.pipeline run --stage dq --layer silver` (tras F3) o `--layer gold` (tras F4). Motor: `src/saber11/quality/engine.py`. Salida: `0` aprobado, `4` rechazado, `1` error técnico. F4 debe exigir `gate_aprobado(run_log, "silver", <run_id del Silver consumido>)` |
 | Herramientas | DuckDB SQL, pytest (**Recomendación técnica adicional**: motor propio ligero en vez de Great Expectations para no añadir dependencias pesadas) |
 | Dependencias | F1 (diseño), F3/F4 (ejecución) |
-| Criterio de aceptación | Todas las reglas `bloqueante` = PASS para promover a Gold; informe generado por ejecución |
-| Riesgos / Mitigación | Umbrales arbitrarios → fijarlos con el perfilamiento y registrarlos en ADR |
+| Criterio de aceptación | Todas las reglas `bloqueante` = PASS para promover a Gold (un `ERROR` de evaluación en una bloqueante también rechaza); informe generado por ejecución con score DQ y % de aprobación por dimensión |
+| Riesgos / Mitigación | Umbrales arbitrarios → fijados con el perfilamiento y registrados en `docs/adr/0016-motor-dq-propio-y-umbrales.md` |
 
 (Catálogo detallado en §20.)
 

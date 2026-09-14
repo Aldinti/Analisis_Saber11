@@ -4,6 +4,7 @@ Uso (desde la raíz del proyecto, con el entorno .venv):
     python -m saber11.pipeline validate-source
     python -m saber11.pipeline run --stage bronze
     python -m saber11.pipeline run --stage silver [--ingest-id <run_id>]
+    python -m saber11.pipeline run --stage dq [--layer silver|gold]
 
 Solo están implementadas las etapas ya ejecutadas en el plan; las demás informan su fase.
 """
@@ -19,9 +20,10 @@ from saber11.ingest.bronze import escribir_reporte_contrato, ingerir_bronze
 from saber11.ingest.contract import ContratoFuenteError, validar_fuente
 from saber11.logging_utils import setup_logger
 from saber11.metadata import run_log
+from saber11.quality.engine import ejecutar_gate
 from saber11.transform.silver import ingerir_silver
 
-ETAPAS_PENDIENTES = {"dq": "F5b", "gold": "F4", "ml": "F8", "shap": "F9", "fairness": "F10"}
+ETAPAS_PENDIENTES = {"gold": "F4", "ml": "F8", "shap": "F9", "fairness": "F10"}
 log = setup_logger("saber11.pipeline")
 
 
@@ -82,6 +84,37 @@ def ejecutar_silver(settings: dict[str, Any], contrato: dict[str, Any], raiz: Pa
     return 0
 
 
+def ejecutar_dq(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path, capa: str = "silver") -> int:
+    """Quality gate. Códigos: 0 aprobado, 4 rechazado (bloqueantes), 1 error técnico."""
+    run_id = run_log.nuevo_run_id()
+    inicio = run_log.ahora_utc()
+    etapa = f"dq_{capa}"
+    ruta_log = raiz / settings["paths"]["metadata"] / "run_log.parquet"
+    sha_git = run_log.git_sha(raiz)
+    trazabilidad = {"git_con_cambios": run_log.git_con_cambios(raiz)}
+    log.info("Inicio quality gate capa=%s run_id=%s", capa, run_id)
+    try:
+        gate = ejecutar_gate(capa, settings, contrato, raiz, run_id, inicio)
+    except Exception as e:  # noqa: BLE001 - se registra el fallo y se devuelve código de error
+        run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+            run_id, etapa, "fallido", inicio, run_log.ahora_utc(), git_sha=sha_git,
+            detalle={"error": type(e).__name__, "mensaje": str(e), "aprobado": False, **trazabilidad}))
+        log.error("Quality gate %s con error: %s: %s", capa, type(e).__name__, e)
+        return 1
+    resumen = gate.resumen()
+    run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+        run_id, etapa, "exitoso" if gate.aprobado else "fallido", inicio, run_log.ahora_utc(),
+        filas=len(gate.resultados), git_sha=sha_git,
+        detalle={**resumen, "informe": gate.rutas["informe"].relative_to(raiz).as_posix(), **trazabilidad}))
+    for r in gate.resultados:
+        if r.estado != "PASA":
+            log.warning("%s %s %s valor=%s umbral=%s %s", r.regla_id, r.severidad, r.estado, r.valor, r.umbral, r.mensaje)
+    log.info("Quality gate %s: %s score=%.1f%% bloqueantes_fallidas=%s informe=%s", capa,
+             "APROBADO" if gate.aprobado else "RECHAZADO", 100 * gate.score, resumen["bloqueantes_fallidas"],
+             gate.rutas["informe"].relative_to(raiz))
+    return 0 if gate.aprobado else 4
+
+
 def validar_fuente_cli(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path) -> int:
     run_id = run_log.nuevo_run_id()
     resultado = validar_fuente(ruta_fuente(settings, raiz), contrato)
@@ -97,8 +130,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="comando", required=True)
     sub.add_parser("validate-source", help="valida el CSV de landing contra el contrato")
     run = sub.add_parser("run", help="ejecuta una etapa del pipeline")
-    run.add_argument("--stage", required=True, choices=["bronze", "silver", *ETAPAS_PENDIENTES])
+    run.add_argument("--stage", required=True, choices=["bronze", "silver", "dq", *ETAPAS_PENDIENTES])
     run.add_argument("--ingest-id", help="partición Bronze a procesar en silver (por defecto, la vigente)")
+    run.add_argument("--layer", choices=["silver", "gold"], default="silver", help="capa evaluada por el quality gate")
     args = parser.parse_args(argv)
 
     settings, contrato = get_settings(), get_source_contract()
@@ -107,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.stage in ETAPAS_PENDIENTES:
         log.error("La etapa '%s' aún no está implementada (fase %s del plan)", args.stage, ETAPAS_PENDIENTES[args.stage])
         return 3
+    if args.stage == "dq":
+        return ejecutar_dq(settings, contrato, PROJECT_ROOT, args.layer)
     if args.stage == "silver":
         return ejecutar_silver(settings, contrato, PROJECT_ROOT, args.ingest_id)
     return ejecutar_bronze(settings, contrato, PROJECT_ROOT)

@@ -14,7 +14,7 @@
 # Parámetros: la SQL solo usa marcadores ${nombre} que el motor resuelve antes de ejecutar:
 #   ${k_min}                    settings.yaml -> privacy.k_min
 #   ${min_schools_comparative}  settings.yaml -> privacy.min_schools_comparative
-#   ${run_id}                   identificador de la ejecución en curso
+#   ${run_id}                   run_id de la ejecución que produjo los datos evaluados (p. ej. la última etapa silver)
 # Los valores que dependen de la fecha se calculan en SQL (p. ej. year(current_date)); nunca se escriben fijos.
 
 rules:

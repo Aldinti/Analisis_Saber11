@@ -81,15 +81,16 @@ Analisis_Saber11/
    .\.venv\Scripts\pytest.exe
    ```
 
-5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`):
+5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`):
    ```powershell
    $env:PYTHONPATH = "src"
    .\.venv\Scripts\python.exe -m saber11.pipeline validate-source      # contrato del CSV de data/landing
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage bronze   # idempotente: reingestar el mismo archivo se omite
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage silver   # requiere SABER11_HMAC_KEY en .env
+   .\.venv\Scripts\python.exe -m saber11.pipeline run --stage dq --layer silver   # quality gate antes de Gold
    ```
-   Códigos de salida: `0` éxito u omitido, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada.
-   Cada ejecución queda en `data/metadata/run_log.parquet` y el reporte del contrato en `reports/quality/`.
+   Códigos de salida: `0` éxito, omitido o gate aprobado, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada, `4` quality gate rechazado.
+   Cada ejecución queda en `data/metadata/run_log.parquet`; los resultados de calidad en `data/metadata/dq_results.parquet` y los informes (contrato y `dq_<run_id>.md`) en `reports/quality/`.
 
 ---
 

@@ -81,11 +81,12 @@ Analisis_Saber11/
    .\.venv\Scripts\pytest.exe
    ```
 
-5. **Ejecutar el pipeline** (etapas implementadas: `bronze`):
+5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`):
    ```powershell
    $env:PYTHONPATH = "src"
    .\.venv\Scripts\python.exe -m saber11.pipeline validate-source      # contrato del CSV de data/landing
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage bronze   # idempotente: reingestar el mismo archivo se omite
+   .\.venv\Scripts\python.exe -m saber11.pipeline run --stage silver   # requiere SABER11_HMAC_KEY en .env
    ```
    Códigos de salida: `0` éxito u omitido, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada.
    Cada ejecución queda en `data/metadata/run_log.parquet` y el reporte del contrato en `reports/quality/`.

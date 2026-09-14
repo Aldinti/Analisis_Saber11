@@ -659,13 +659,15 @@ if __name__ == "__main__":
 | Objetivo | Dataset limpio, tipado, estandarizado y seudonimizado |
 | Actividades | 1) Normalización de nombres a snake_case ASCII (función `normalize_colname`: `unicodedata` NFKD, quitar tildes, `[^a-z0-9]→_`). 2) `TRY_CAST` con conteo de fallos. 3) Categorías: `trim`, mayúscula inicial, mapa canónico (`Pública`, `Urbana`, `Masculino/Femenino`), `grupo` → `11-1`. 4) Nulos: hoy 0; regla: en puntajes → descartar fila a cuarentena `silver_rechazos` con motivo; en categóricas → `'No informado'`. 5) Atípicos: fuera de escala válida → cuarentena; atípicos estadísticos dentro de escala **se conservan y marcan** (`flag_atipico`), no se imputan. 6) Coherencia `puntaje_global` vs áreas → `flag_inconsistencia_global`. 7) `estudiante_pid` = HMAC-SHA-256 (clave desde `SABER11_HMAC_KEY`). 8) Eliminar `nroDoc`, nombres, apellidos. 9) `jornada`: conservar `periodo` y derivar `jornada = COALESCE(periodo,'Unica')` para cumplir `Objetivos.md` |
 | Entrada | Bronze |
-| Proceso | SQL en `sql/silver/*.sql` ejecutado desde `src/saber11/transform/silver.py`; HMAC en Python vía UDF o columna calculada en pandas/Arrow |
+| Proceso | `PYTHONPATH=src python -m saber11.pipeline run --stage silver [--ingest-id <run_id>]`. SQL en `sql/silver/01_texto.sql` … `04_salidas.sql` ejecutado desde `src/saber11/transform/silver.py`; HMAC en Python como UDF de DuckDB (la clave no entra en el texto SQL). Entrada por defecto: la partición Bronze del último `bronze` exitoso u omitido en `run_log` |
 | Herramientas | DuckDB, Python `hmac`, `hashlib` |
 | Salida / Entregable | `data/silver/silver_resultados.parquet`, `data/silver/silver_rechazos.parquet`, `docs/data_dictionary.md` (sección Silver) |
 | Dependencias | F2; F5 (catálogo de reglas, en paralelo) |
-| Criterio de aceptación | 0 columnas PII directas; 100 % nombres ASCII snake_case; `filas_silver + filas_rechazo = filas_bronze`; `estudiante_pid` único y de 64 hex; mismo input + misma clave → mismo pid |
+| Criterio de aceptación | 0 columnas PII directas (también en rechazos); 100 % nombres ASCII snake_case; `filas_silver + filas_rechazo = filas_bronze`; `estudiante_pid` de 64 hex y único por evaluación (`estudiante_pid + anio + periodo`); mismo input + misma clave → mismo pid. Se verifican antes de publicar: si fallan, no se reemplaza Silver y `run_log` registra `fallido` |
 | Riesgos | Pérdida de la clave HMAC → no se pueden enlazar cargas futuras |
 | Mitigación | Custodia de la clave fuera del repo (gestor de secretos del SO/archivo cifrado), responsable designado (*Pendiente de definición*) |
+
+Decisiones de implementación F3: `sexo` y `estrato` vacíos quedan NULL (los mide DQ-COM-002, no se rechazan); `zona` vacía o fuera de dominio se rechaza (DQ-VAL-004 es bloqueante); duplicados por `estudiante_pid + anio + periodo` → se conserva la primera fila de la fuente; `flag_atipico` = algún puntaje fuera de 1,5·IQR de la carga. Detalle columna a columna en `docs/data_dictionary.md`. Los puntajes de área son TINYINT: toda suma debe convertir a INTEGER (defecto de desborde encontrado y corregido en DQ-EXA-001 durante F3).
 
 Columnas Silver: `anio SMALLINT, periodo VARCHAR, jornada VARCHAR, pais, departamento, municipio, zona, estrato TINYINT, nombre_colegio, naturaleza_colegio, modelo_pedagogico, estudiante_pid VARCHAR(64), sexo, grupo, puntaje_global SMALLINT, punt_lectura_critica, punt_matematicas, punt_sociales, punt_ciencias, punt_ingles TINYINT, flag_atipico BOOLEAN, flag_inconsistencia_global BOOLEAN, _ingest_id, _source_sha256`.
 

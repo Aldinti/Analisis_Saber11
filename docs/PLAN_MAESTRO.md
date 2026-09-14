@@ -122,9 +122,9 @@ flowchart TD
    CREATE OR REPLACE TABLE bronze_resultados AS
    SELECT *, '${run_id}' AS _ingest_id, '${file}' AS _source_file,
           '${sha256}' AS _source_sha256, now() AS _ingested_at
-   FROM read_csv('${file}', delim=';', header=true, all_varchar=true, encoding='latin-1');
+   FROM read_csv('${file}', delim=';', header=true, all_varchar=true, encoding='cp1252');
    ```
-   *(El valor exacto admitido por `encoding` en la versión instalada de DuckDB se verifica en Fase 0; alternativa: transcodificar a UTF-8 en Python antes de leer.)*
+   *(Verificado en F2 con DuckDB 1.5.5: `encoding='cp1252'` y `'latin-1'` son aceptados y producen valores idénticos a pandas con cp1252; `'windows-1252'` e `'iso-8859-1'` no. Se usa el valor `cp1252` del contrato. `run_log` guarda `run_id, etapa, estado, iniciado_utc, finalizado_utc, filas, source_sha256, git_sha, python_version, duckdb_version, detalle`.)*
 3. **Silver**: renombrar (`año→anio`, `Lectura Crítica→punt_lectura_critica`, `Matemáticas→punt_matematicas`, `Sociales y Ciudadana→punt_sociales`, `Ciencias Naturales→punt_ciencias`, `Inglés→punt_ingles`, `Global→puntaje_global`), `TRY_CAST` a tipos, normalizar categorías, `estudiante_pid = HMAC-SHA256(secret, nroDoc)` calculado en Python, **eliminar** `nroDoc`, `nombre1..apellido2`.
 4. **Quality gate** (§20) sobre Silver → si una regla bloqueante falla, no se construye Gold.
 5. **Gold**: dimensiones con claves sustitutas, hechos, agregados de benchmark, tabla de seguridad.
@@ -645,11 +645,11 @@ if __name__ == "__main__":
 | Objetivo | Preservar la fuente íntegra y trazable |
 | Actividades | Contrato de fuente (`config/source_contract.yaml`: columnas, orden, separador, encoding); SHA-256 del archivo; copia inmutable `data/bronze/raw/<sha256>.csv`; Parquet con todas las columnas VARCHAR + `_ingest_id,_source_file,_source_sha256,_ingested_at`; idempotencia (si el hash ya existe, no reingestar); registro en `run_log` |
 | Entrada | CSV en landing |
-| Proceso | `python -m saber11.pipeline run --stage bronze` |
+| Proceso | `PYTHONPATH=src python -m saber11.pipeline run --stage bronze` (con `.venv`); validación previa opcional: `validate-source` |
 | Herramientas | Python `hashlib`, DuckDB |
-| Salida / Entregable | `data/bronze/bronze_resultados/ingest_id=<run_id>/part-0.parquet`, `run_log.parquet` |
+| Salida / Entregable | `data/bronze/raw/<sha256>.csv` (solo lectura), `data/bronze/bronze_resultados/ingest_id=<run_id>/part-0.parquet` (Snappy), `data/metadata/run_log.parquet`, `reports/quality/source_check_<run_id>.json`. Código: `src/saber11/ingest/{contract,bronze}.py`, `src/saber11/metadata/run_log.py`, `src/saber11/pipeline.py` |
 | Dependencias | F1 |
-| Criterio de aceptación | `count(bronze) = filas del CSV (899)`; hash de la copia = hash de origen; reingesta del mismo archivo no duplica filas |
+| Criterio de aceptación | `count(bronze) = filas de datos del CSV de landing` (14.666 con el CSV ampliado de F1b); hash de la copia = hash de origen; reingesta del mismo archivo no duplica filas (queda `omitido` en `run_log`); contrato incumplido → no se escribe Bronze y se registra `fallido` |
 | Riesgos | Bronze contiene PII (nombres, `nroDoc`) |
 | Mitigación | Carpeta restringida, excluida de git, no conectada a Power BI; política de retención (*Pendiente de definición*) |
 
@@ -1146,9 +1146,14 @@ Formato de regla (`config/dq_rules.yaml`):
   tabla: silver_resultados
   descripcion: puntaje_global dentro de escala
   sql: SELECT count(*) FROM silver_resultados WHERE puntaje_global NOT BETWEEN 0 AND 500
+  metrica: conteo          # conteo | proporcion (0..1)
   umbral_max_fallos: 0
   severidad: bloqueante
 ```
+Convenciones del catálogo (implementadas en F5a, `src/saber11/quality/rules.py`):
+- La SQL devuelve un escalar (la métrica de fallo); la regla pasa si métrica ≤ `umbral_max_fallos`. Reglas sin `sql` se evalúan en Python (contrato de columnas, conteos entre capas, columnas PII).
+- **Nada fijo que dependa de configuración o de la fecha:** los umbrales de privacidad se escriben como marcadores `${k_min}` y `${min_schools_comparative}` (resueltos desde `settings.yaml`), `${run_id}` identifica la ejecución, y los límites temporales se calculan en SQL (`year(current_date)`).
+- `tests/unit/test_dq_rules.py` verifica que el catálogo cubre todas las reglas de esta sección, que no hay años ni `k_min` fijos, y ejecuta cada SQL en DuckDB con datos correctos (debe pasar) y con defectos inyectados (debe fallar).
 
 | ID | Dimensión | Regla | Umbral | Severidad |
 |---|---|---|---|---|

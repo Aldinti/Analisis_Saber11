@@ -1,0 +1,88 @@
+"""CLI del pipeline Saber 11.
+
+Uso (desde la raíz del proyecto, con el entorno .venv):
+    python -m saber11.pipeline validate-source
+    python -m saber11.pipeline run --stage bronze
+
+Solo están implementadas las etapas ya ejecutadas en el plan; las demás informan su fase.
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+from typing import Any
+
+from saber11.config import PROJECT_ROOT, get_settings, get_source_contract
+from saber11.ingest.bronze import escribir_reporte_contrato, ingerir_bronze
+from saber11.ingest.contract import ContratoFuenteError, validar_fuente
+from saber11.logging_utils import setup_logger
+from saber11.metadata import run_log
+
+ETAPAS_PENDIENTES = {"silver": "F3", "dq": "F5b", "gold": "F4", "ml": "F8", "shap": "F9", "fairness": "F10"}
+log = setup_logger("saber11.pipeline")
+
+
+def ruta_fuente(settings: dict[str, Any], raiz: Path) -> Path:
+    return raiz / settings["paths"]["landing"] / settings["source"]["file_name"]
+
+
+def ejecutar_bronze(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path,
+                    fuente: Path | None = None) -> int:
+    run_id = run_log.nuevo_run_id()
+    inicio = run_log.ahora_utc()
+    fuente = fuente or ruta_fuente(settings, raiz)
+    ruta_log = raiz / settings["paths"]["metadata"] / "run_log.parquet"
+    sha_git = run_log.git_sha(raiz)
+    trazabilidad = {"git_con_cambios": run_log.git_con_cambios(raiz)}
+    log.info("Inicio etapa bronze run_id=%s archivo=%s", run_id, fuente.name)
+    try:
+        r = ingerir_bronze(fuente, settings, contrato, run_id, raiz, inicio)
+    except ContratoFuenteError as e:
+        run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+            run_id, "bronze", "fallido", inicio, run_log.ahora_utc(), git_sha=sha_git,
+            detalle={"error": "contrato", **trazabilidad, **e.resultado.a_dict()}))
+        log.error("Contrato de fuente incumplido: %s", e.resultado.errores_por_tipo)
+        return 2
+    except Exception as e:  # noqa: BLE001 - se registra el fallo y se devuelve código de error
+        run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+            run_id, "bronze", "fallido", inicio, run_log.ahora_utc(), git_sha=sha_git,
+            detalle={"error": type(e).__name__, "mensaje": str(e), **trazabilidad}))
+        log.error("Etapa bronze fallida: %s: %s", type(e).__name__, e)
+        return 1
+    run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+        run_id, "bronze", r.estado, inicio, run_log.ahora_utc(), filas=r.filas,
+        source_sha256=r.source_sha256, git_sha=sha_git, detalle={**r.detalle(), **trazabilidad}))
+    log.info("Fin etapa bronze: estado=%s filas=%d ingest_id=%s", r.estado, r.filas, r.ingest_id)
+    return 0
+
+
+def validar_fuente_cli(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path) -> int:
+    run_id = run_log.nuevo_run_id()
+    resultado = validar_fuente(ruta_fuente(settings, raiz), contrato)
+    reporte = escribir_reporte_contrato(resultado, run_id, raiz / settings["paths"]["reports"] / "quality")
+    log.info("Contrato %s: filas=%d errores=%s reporte=%s", "aprobado" if resultado.aprobado else "RECHAZADO",
+             resultado.filas_datos, resultado.errores_por_tipo, reporte.relative_to(raiz))
+    return 0 if resultado.aprobado else 2
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="saber11.pipeline", description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="comando", required=True)
+    sub.add_parser("validate-source", help="valida el CSV de landing contra el contrato")
+    run = sub.add_parser("run", help="ejecuta una etapa del pipeline")
+    run.add_argument("--stage", required=True, choices=["bronze", *ETAPAS_PENDIENTES])
+    args = parser.parse_args(argv)
+
+    settings, contrato = get_settings(), get_source_contract()
+    if args.comando == "validate-source":
+        return validar_fuente_cli(settings, contrato, PROJECT_ROOT)
+    if args.stage in ETAPAS_PENDIENTES:
+        log.error("La etapa '%s' aún no está implementada (fase %s del plan)", args.stage, ETAPAS_PENDIENTES[args.stage])
+        return 3
+    return ejecutar_bronze(settings, contrato, PROJECT_ROOT)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

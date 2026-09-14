@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "saber11"
+version = "0.1.0"
+description = "Plataforma analítica Lakehouse + BI + ML para resultados Saber 11"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "duckdb>=1.1.0",
+    "pandas>=2.2.0",
+    "pyarrow>=17.0.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.5.0",
+    "xgboost>=2.1.0",
+    "shap>=0.46.0",
+    "matplotlib>=3.9.0",
+    "pyyaml>=6.0.2",
+    "python-dotenv>=1.0.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q --cov=saber11 --cov-report=term-missing"

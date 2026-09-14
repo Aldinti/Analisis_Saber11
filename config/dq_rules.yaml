@@ -1,0 +1,113 @@
+rules:
+  - id: DQ-INT-001
+    dimension: integridad
+    tabla: bronze_resultados
+    descripcion: 23 columnas esperadas del contrato presentes
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-INT-002
+    dimension: integridad
+    tabla: silver_resultados
+    descripcion: Filas silver + filas rechazo igual a filas bronze
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-COM-001
+    dimension: completitud
+    tabla: silver_resultados
+    descripcion: Sin nulos en anio, nombre_colegio, puntaje_global, punt_*
+    sql: SELECT count(*) FROM silver_resultados WHERE anio IS NULL OR nombre_colegio IS NULL OR puntaje_global IS NULL
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-COM-002
+    dimension: completitud
+    tabla: silver_resultados
+    descripcion: Nulos en sexo, estrato <= 5%
+    sql: SELECT count(*) FROM silver_resultados WHERE sexo IS NULL OR estrato IS NULL
+    severidad: advertencia
+    umbral_max_fallos: 0.05
+
+  - id: DQ-UNI-001
+    dimension: unicidad
+    tabla: silver_resultados
+    descripcion: estudiante_pid + anio + periodo debe ser unico
+    sql: SELECT count(*) - count(DISTINCT estudiante_pid || '-' || anio || '-' || periodo) FROM silver_resultados
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VAL-001
+    dimension: validez
+    tabla: silver_resultados
+    descripcion: anio entre 2000 y 2026
+    sql: SELECT count(*) FROM silver_resultados WHERE anio NOT BETWEEN 2000 AND 2026
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VAL-002
+    dimension: validez
+    tabla: silver_resultados
+    descripcion: puntajes de area entre 0 y 100
+    sql: >
+      SELECT count(*) FROM silver_resultados
+      WHERE punt_lectura_critica NOT BETWEEN 0 AND 100
+         OR punt_matematicas NOT BETWEEN 0 AND 100
+         OR punt_sociales NOT BETWEEN 0 AND 100
+         OR punt_ciencias NOT BETWEEN 0 AND 100
+         OR punt_ingles NOT BETWEEN 0 AND 100
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VAL-003
+    dimension: validez
+    tabla: silver_resultados
+    descripcion: puntaje_global entre 0 y 500
+    sql: SELECT count(*) FROM silver_resultados WHERE puntaje_global NOT BETWEEN 0 AND 500
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VAL-004
+    dimension: validez
+    tabla: silver_resultados
+    descripcion: dominios de sexo, estrato y zona
+    sql: >
+      SELECT count(*) FROM silver_resultados
+      WHERE sexo NOT IN ('Masculino', 'Femenino')
+         OR estrato NOT BETWEEN 1 AND 6
+         OR zona NOT IN ('Urbana', 'Rural')
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-VAL-005
+    dimension: validez
+    tabla: silver_resultados
+    descripcion: estudiante_pid formato hex 64 caracteres
+    sql: SELECT count(*) FROM silver_resultados WHERE NOT regexp_matches(estudiante_pid, '^[0-9a-f]{64}$')
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-EXA-001
+    dimension: exactitud
+    tabla: silver_resultados
+    descripcion: consistencia matematica formula puntaje global
+    sql: >
+      SELECT count(*) FROM silver_resultados
+      WHERE puntaje_global <> round(5.0 * (3.0 * (punt_lectura_critica + punt_matematicas + punt_sociales + punt_ciencias) + punt_ingles) / 13.0)
+    severidad: advertencia
+    umbral_max_fallos: 0.01
+
+  - id: DQ-PRI-001
+    dimension: privacidad
+    tabla: silver_resultados
+    descripcion: ausencia absoluta de columnas PII directas en Silver/Gold
+    severidad: bloqueante
+    umbral_max_fallos: 0
+
+  - id: DQ-PRI-002
+    dimension: privacidad
+    tabla: agg_operativo_colegio
+    descripcion: agregados operativos no muestran metricas en grupos con n < k_min
+    sql: SELECT count(*) FROM agg_operativo_colegio WHERE n < 5 AND promedio IS NOT NULL
+    severidad: bloqueante
+    umbral_max_fallos: 0

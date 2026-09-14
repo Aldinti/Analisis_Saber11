@@ -1,0 +1,85 @@
+source_contract:
+  delimiter: ";"
+  encoding: "cp1252"
+  expected_columns_count: 23
+  columns:
+    - name: "año"
+      type: "int"
+      required: true
+    - name: "periodo"
+      type: "string"
+      required: true
+    - name: "pais"
+      type: "string"
+      required: true
+    - name: "departamento"
+      type: "string"
+      required: true
+    - name: "municipio"
+      type: "string"
+      required: true
+    - name: "zona"
+      type: "string"
+      required: true
+    - name: "estrato"
+      type: "int"
+      required: true
+    - name: "nombre_colegio"
+      type: "string"
+      required: true
+    - name: "naturaleza_colegio"
+      type: "string"
+      required: true
+    - name: "modelopedag_colegio"
+      type: "string"
+      required: true
+    - name: "nroDoc"
+      type: "int64"
+      required: true
+      pii: true
+    - name: "nombre1"
+      type: "string"
+      required: true
+      pii: true
+    - name: "nombre2"
+      type: "string"
+      required: false
+      pii: true
+    - name: "apellido1"
+      type: "string"
+      required: true
+      pii: true
+    - name: "apellido2"
+      type: "string"
+      required: false
+      pii: true
+    - name: "sexo"
+      type: "string"
+      required: true
+    - name: "grupo"
+      type: "string"
+      required: true
+    - name: "Global"
+      type: "int"
+      required: true
+      range: [0, 500]
+    - name: "Lectura Crítica"
+      type: "int"
+      required: true
+      range: [0, 100]
+    - name: "Matemáticas"
+      type: "int"
+      required: true
+      range: [0, 100]
+    - name: "Sociales y Ciudadana"
+      type: "int"
+      required: true
+      range: [0, 100]
+    - name: "Ciencias Naturales"
+      type: "int"
+      required: true
+      range: [0, 100]
+    - name: "Inglés"
+      type: "int"
+      required: true
+      range: [0, 100]

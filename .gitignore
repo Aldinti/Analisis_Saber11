@@ -1,0 +1,42 @@
+# Entorno virtual
+.venv/
+env/
+venv/
+
+# Python cache y compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Datos (CONFIDENCIAL / PII / VOLUMEN)
+data/
+*.parquet
+*.csv
+!config/*.csv
+!tests/fixtures/*.csv
+*.tmp
+
+# Secretos y credenciales
+.env
+.env.local
+*.key
+*.pem
+
+# Modelos binarios grandes
+models/**/*.joblib
+models/**/*.bin
+models/**/*.onnx
+
+# Power BI (Archivos locales con datos en caché)
+*.pbix
+
+# IDEs
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json

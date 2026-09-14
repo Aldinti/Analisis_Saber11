@@ -1,0 +1,42 @@
+app:
+  name: "Analisis_Saber11"
+  environment: "local"
+  seed: 20260913
+
+paths:
+  landing: "data/landing"
+  bronze: "data/bronze"
+  silver: "data/silver"
+  gold: "data/gold"
+  metadata: "data/metadata"
+  tmp: "data/_tmp"
+  reports: "reports"
+  models: "models"
+  powerbi: "powerbi"
+
+source:
+  file_name: "ResultadosICFES.csv"
+  encoding: "cp1252"
+  delimiter: ";"
+
+lakehouse:
+  bronze_table: "bronze_resultados"
+  silver_table: "silver_resultados"
+  silver_quarantine: "silver_rechazos"
+  gold_fact: "fact_resultado"
+  gold_fact_area: "fact_resultado_area"
+  gold_benchmark: "agg_benchmark_distrito"
+  gold_operativo: "agg_operativo_colegio"
+  gold_security: "seguridad_rectores"
+
+privacy:
+  k_min: 5
+  min_schools_comparative: 3
+  hmac_env_var: "SABER11_HMAC_KEY"
+
+ml:
+  target: "puntaje_global"
+  test_year: 2024
+  cv_splits: 5
+  cv_group_col: "nombre_colegio"
+  random_state: 20260913

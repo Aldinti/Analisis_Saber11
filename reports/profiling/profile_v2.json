@@ -1,0 +1,893 @@
+{
+  "metadatos": {
+    "version": "v2",
+    "archivo": "ResultadosICFES.csv",
+    "sha256": "e34ff52d14ad2cd6c3b5b1432b402e7832369d4115e5534af97ee363cef6b00f",
+    "generado_utc": "2026-09-14T04:58:51+00:00",
+    "filas": 14666,
+    "columnas": 23,
+    "encoding": "cp1252",
+    "separador": ";",
+    "fin_de_linea": "CRLF"
+  },
+  "hallazgos": [
+    {
+      "id": "H1",
+      "tema": "Formato de la fuente",
+      "estado": "Conservado (esperado)",
+      "evidencia": "encoding=cp1252, separador=';', fin de línea=CRLF, 14666 filas × 23 columnas"
+    },
+    {
+      "id": "H2",
+      "tema": "Variables constantes",
+      "estado": "Resuelto",
+      "evidencia": "constantes: pais, departamento, municipio"
+    },
+    {
+      "id": "H3",
+      "tema": "Modelo pedagógico ≡ colegio",
+      "estado": "Resuelto",
+      "evidencia": "Aprendizaje basado en proyectos: 4 colegios, 2 naturalezas; Constructivista: 4 colegios, 2 naturalezas; Pedagogía conceptual: 4 colegios, 2 naturalezas; Tradicional: 4 colegios, 2 naturalezas"
+    },
+    {
+      "id": "H4",
+      "tema": "Global = f(áreas)",
+      "estado": "Conservado (riesgo de leakage)",
+      "evidencia": "fórmula rint(5·(3·(LC+MAT+SOC+CN)+ING)/13) se cumple en 100.00 % de filas"
+    },
+    {
+      "id": "H5",
+      "tema": "nroDoc enumerable",
+      "estado": "Parcial (sigue siendo enumerable)",
+      "evidencia": "secuencial 1..n: no; 6.1 % de documentos ≤ 1.000.000; único: sí"
+    },
+    {
+      "id": "H6",
+      "tema": "PII directa en la fuente",
+      "estado": "Presente (se elimina en Silver)",
+      "evidencia": "columnas: nroDoc, nombre1, nombre2, apellido1, apellido2"
+    },
+    {
+      "id": "H7",
+      "tema": "Estructura de agrupamiento",
+      "estado": "Resuelto",
+      "evidencia": "16 colegios; registros repetidos por estudiante: 0; años: 4"
+    },
+    {
+      "id": "H8",
+      "tema": "Balance por sexo",
+      "estado": "Resuelto",
+      "evidencia": "% Femenino global 50.1; mín. por colegio-año 50.0; máx. 50.2"
+    },
+    {
+      "id": "H9",
+      "tema": "Codificación de `grupo`",
+      "estado": "Conservado",
+      "evidencia": "3 valores; caracteres no ASCII: ['°']"
+    },
+    {
+      "id": "H10",
+      "tema": "Rangos de puntajes",
+      "estado": "Dentro de escala",
+      "evidencia": "escala válida: áreas 0–100, Global 0–500; observado: Global 206–500, áreas 29–100"
+    },
+    {
+      "id": "H11",
+      "tema": "Confusión entre factores",
+      "estado": "Resuelto",
+      "evidencia": "Cramér V máx = 0.0335 (año~naturaleza_colegio); umbral independencia ≤ 0.05; no evaluables: 0 pares"
+    }
+  ],
+  "columnas": [
+    {
+      "columna": "año",
+      "tipo_inferido": "int64",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 4,
+      "constante": false,
+      "min": 2021,
+      "p25": "2021.0",
+      "p50": 2022.0,
+      "p75": "2023.0",
+      "max": 2024,
+      "media": 2022.4698,
+      "desv_est": 1.115,
+      "atipicos_iqr": 0,
+      "atipicos_z3": 0,
+      "valores": {
+        "2021": 3781,
+        "2022": 3723,
+        "2023": 3653,
+        "2024": 3509
+      }
+    },
+    {
+      "columna": "periodo",
+      "tipo_inferido": "str",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 2,
+      "constante": false,
+      "valores": {
+        "I": 7350,
+        "II": 7316
+      }
+    },
+    {
+      "columna": "pais",
+      "tipo_inferido": "str",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 1,
+      "constante": true,
+      "valores": {
+        "Colombia": 14666
+      }
+    },
+    {
+      "columna": "departamento",
+      "tipo_inferido": "str",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 1,
+      "constante": true,
+      "valores": {
+        "Magdalena": 14666
+      }
+    },
+    {
+      "columna": "municipio",
+      "tipo_inferido": "str",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 1,
+      "constante": true,
+      "valores": {
+        "Santa Marta": 14666
+      }
+    },
+    {
+      "columna": "zona",
+      "tipo_inferido": "str",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 2,
+      "constante": false,
+      "valores": {
+        "Rural": 7331,
+        "Urbana": 7335
+      }
+    },
+    {
+      "columna": "estrato",
+      "tipo_inferido": "int64",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 6,
+      "constante": false,
+      "min": 1,
+      "p25": "2.0",
+      "p50": 3.0,
+      "p75": "4.0",
+      "max": 6,
+      "media": 2.9549,
+      "desv_est": 1.5624,
+      "atipicos_iqr": 0,
+      "atipicos_z3": 0,
+      "valores": {
+        "1": 3252,
+        "2": 3228,
+        "3": 3203,
+        "4": 2067,
+        "5": 1744,
+        "6": 1172
+      }
+    },
+    {
+      "columna": "nombre_colegio",
+      "tipo_inferido": "str",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 16,
+      "constante": false,
+      "valores": {
+        "ABC": 904,
+        "BCD": 916,
+        "DEF": 920,
+        "EFG": 917,
+        "GHI": 911,
+        "HIJ": 904,
+        "JKL": 932,
+        "KLM": 922,
+        "MNO": 915,
+        "NOP": 921,
+        "PQR": 931,
+        "RST": 900,
+        "STU": 908,
+        "VWX": 905,
+        "XYZ": 954,
+        "YZA": 906
+      }
+    },
+    {
+      "columna": "naturaleza_colegio",
+      "tipo_inferido": "str",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 2,
+      "constante": false,
+      "valores": {
+        "Privada": 7323,
+        "Pública": 7343
+      }
+    },
+    {
+      "columna": "modelopedag_colegio",
+      "tipo_inferido": "str",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 4,
+      "constante": false,
+      "valores": {
+        "Aprendizaje basado en proyectos": 3693,
+        "Constructivista": 3647,
+        "Pedagogía conceptual": 3666,
+        "Tradicional": 3660
+      }
+    },
+    {
+      "columna": "nroDoc",
+      "tipo_inferido": "int64",
+      "clasificacion": "PII directa",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 14666,
+      "constante": false,
+      "unico": true
+    },
+    {
+      "columna": "nombre1",
+      "tipo_inferido": "str",
+      "clasificacion": "PII directa",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 14666,
+      "constante": false,
+      "unico": true
+    },
+    {
+      "columna": "nombre2",
+      "tipo_inferido": "str",
+      "clasificacion": "PII directa",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 14666,
+      "constante": false,
+      "unico": true
+    },
+    {
+      "columna": "apellido1",
+      "tipo_inferido": "str",
+      "clasificacion": "PII directa",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 14666,
+      "constante": false,
+      "unico": true
+    },
+    {
+      "columna": "apellido2",
+      "tipo_inferido": "str",
+      "clasificacion": "PII directa",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 14666,
+      "constante": false,
+      "unico": true
+    },
+    {
+      "columna": "sexo",
+      "tipo_inferido": "str",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 2,
+      "constante": false,
+      "valores": {
+        "Femenino": 7345,
+        "Masculino": 7321
+      }
+    },
+    {
+      "columna": "grupo",
+      "tipo_inferido": "str",
+      "clasificacion": "Cuasi-identificador",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 3,
+      "constante": false,
+      "valores": {
+        "11°1": 4862,
+        "11°2": 4843,
+        "11°3": 4961
+      }
+    },
+    {
+      "columna": "Global",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 262,
+      "constante": false,
+      "min": 206,
+      "p25": "368.0",
+      "p50": 401.0,
+      "p75": "433.0",
+      "max": 500,
+      "media": 399.8251,
+      "desv_est": 47.5005,
+      "atipicos_iqr": 77,
+      "atipicos_z3": 30
+    },
+    {
+      "columna": "Lectura Crítica",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 64,
+      "constante": false,
+      "min": 29,
+      "p25": "72.0",
+      "p50": 80.0,
+      "p75": "88.0",
+      "max": 100,
+      "media": 79.8269,
+      "desv_est": 11.6177,
+      "atipicos_iqr": 58,
+      "atipicos_z3": 18
+    },
+    {
+      "columna": "Matemáticas",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 61,
+      "constante": false,
+      "min": 39,
+      "p25": "72.0",
+      "p50": 80.0,
+      "p75": "88.0",
+      "max": 100,
+      "media": 79.7002,
+      "desv_est": 11.597,
+      "atipicos_iqr": 54,
+      "atipicos_z3": 18
+    },
+    {
+      "columna": "Sociales y Ciudadana",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 65,
+      "constante": false,
+      "min": 36,
+      "p25": "72.0",
+      "p50": 80.0,
+      "p75": "88.0",
+      "max": 100,
+      "media": 79.7901,
+      "desv_est": 11.584,
+      "atipicos_iqr": 58,
+      "atipicos_z3": 30
+    },
+    {
+      "columna": "Ciencias Naturales",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 63,
+      "constante": false,
+      "min": 35,
+      "p25": "72.0",
+      "p50": 80.0,
+      "p75": "88.0",
+      "max": 100,
+      "media": 79.8137,
+      "desv_est": 11.6114,
+      "atipicos_iqr": 53,
+      "atipicos_z3": 19
+    },
+    {
+      "columna": "Inglés",
+      "tipo_inferido": "int64",
+      "clasificacion": "Analítica",
+      "nulos": 0,
+      "pct_nulos": "0.0",
+      "cardinalidad": 63,
+      "constante": false,
+      "min": 35,
+      "p25": "74.0",
+      "p50": 83.0,
+      "p75": "91.0",
+      "max": 100,
+      "media": 82.1443,
+      "desv_est": 11.7516,
+      "atipicos_iqr": 41,
+      "atipicos_z3": 27
+    }
+  ],
+  "duplicados": {
+    "filas_completas": 0,
+    "nroDoc": 0,
+    "nroDoc_año": 0
+  },
+  "consistencia_global_pct": 100.0,
+  "correlaciones_puntajes": {
+    "Global": {
+      "Global": 1.0,
+      "Lectura Crítica": 0.822,
+      "Matemáticas": 0.821,
+      "Sociales y Ciudadana": 0.82,
+      "Ciencias Naturales": 0.83,
+      "Inglés": 0.756
+    },
+    "Lectura Crítica": {
+      "Global": 0.822,
+      "Lectura Crítica": 1.0,
+      "Matemáticas": 0.562,
+      "Sociales y Ciudadana": 0.571,
+      "Ciencias Naturales": 0.587,
+      "Inglés": 0.58
+    },
+    "Matemáticas": {
+      "Global": 0.821,
+      "Lectura Crítica": 0.562,
+      "Matemáticas": 1.0,
+      "Sociales y Ciudadana": 0.568,
+      "Ciencias Naturales": 0.583,
+      "Inglés": 0.589
+    },
+    "Sociales y Ciudadana": {
+      "Global": 0.82,
+      "Lectura Crítica": 0.571,
+      "Matemáticas": 0.568,
+      "Sociales y Ciudadana": 1.0,
+      "Ciencias Naturales": 0.575,
+      "Inglés": 0.584
+    },
+    "Ciencias Naturales": {
+      "Global": 0.83,
+      "Lectura Crítica": 0.587,
+      "Matemáticas": 0.583,
+      "Sociales y Ciudadana": 0.575,
+      "Ciencias Naturales": 1.0,
+      "Inglés": 0.592
+    },
+    "Inglés": {
+      "Global": 0.756,
+      "Lectura Crítica": 0.58,
+      "Matemáticas": 0.589,
+      "Sociales y Ciudadana": 0.584,
+      "Ciencias Naturales": 0.592,
+      "Inglés": 1.0
+    }
+  },
+  "conteo_año_colegio": {
+    "ABC": {
+      "2021": 246,
+      "2022": 302,
+      "2023": 228,
+      "2024": 128
+    },
+    "BCD": {
+      "2021": 229,
+      "2022": 228,
+      "2023": 228,
+      "2024": 231
+    },
+    "DEF": {
+      "2021": 223,
+      "2022": 232,
+      "2023": 240,
+      "2024": 225
+    },
+    "EFG": {
+      "2021": 240,
+      "2022": 227,
+      "2023": 222,
+      "2024": 228
+    },
+    "GHI": {
+      "2021": 231,
+      "2022": 226,
+      "2023": 234,
+      "2024": 220
+    },
+    "HIJ": {
+      "2021": 221,
+      "2022": 220,
+      "2023": 228,
+      "2024": 235
+    },
+    "JKL": {
+      "2021": 231,
+      "2022": 235,
+      "2023": 232,
+      "2024": 234
+    },
+    "KLM": {
+      "2021": 237,
+      "2022": 222,
+      "2023": 232,
+      "2024": 231
+    },
+    "MNO": {
+      "2021": 238,
+      "2022": 228,
+      "2023": 225,
+      "2024": 224
+    },
+    "NOP": {
+      "2021": 232,
+      "2022": 226,
+      "2023": 241,
+      "2024": 222
+    },
+    "PQR": {
+      "2021": 228,
+      "2022": 226,
+      "2023": 236,
+      "2024": 241
+    },
+    "RST": {
+      "2021": 272,
+      "2022": 236,
+      "2023": 202,
+      "2024": 190
+    },
+    "STU": {
+      "2021": 219,
+      "2022": 234,
+      "2023": 223,
+      "2024": 232
+    },
+    "VWX": {
+      "2021": 221,
+      "2022": 226,
+      "2023": 221,
+      "2024": 237
+    },
+    "XYZ": {
+      "2021": 290,
+      "2022": 228,
+      "2023": 236,
+      "2024": 200
+    },
+    "YZA": {
+      "2021": 223,
+      "2022": 227,
+      "2023": 225,
+      "2024": 231
+    }
+  },
+  "estrato_por_naturaleza": {
+    "Privada": {
+      "1": 1625,
+      "2": 1610,
+      "3": 1597,
+      "4": 1038,
+      "5": 867,
+      "6": 586
+    },
+    "Pública": {
+      "1": 1627,
+      "2": 1618,
+      "3": 1606,
+      "4": 1029,
+      "5": 877,
+      "6": 586
+    }
+  },
+  "dependencias": {
+    "colegio_determina_atributo": {
+      "naturaleza_colegio": true,
+      "zona": true,
+      "modelopedag_colegio": true,
+      "periodo": true
+    },
+    "modelo_pedagogico": {
+      "Aprendizaje basado en proyectos": {
+        "colegios": 4,
+        "naturalezas": 2,
+        "zonas": 2
+      },
+      "Constructivista": {
+        "colegios": 4,
+        "naturalezas": 2,
+        "zonas": 2
+      },
+      "Pedagogía conceptual": {
+        "colegios": 4,
+        "naturalezas": 2,
+        "zonas": 2
+      },
+      "Tradicional": {
+        "colegios": 4,
+        "naturalezas": 2,
+        "zonas": 2
+      }
+    },
+    "modelo_equivale_a_colegio": false
+  },
+  "independencia": {
+    "cramer_v": {
+      "naturaleza_colegio~zona": 0.0023,
+      "naturaleza_colegio~periodo": 0.0003,
+      "naturaleza_colegio~modelopedag_colegio": 0.0084,
+      "zona~periodo": 0.0014,
+      "zona~modelopedag_colegio": 0.0088,
+      "periodo~modelopedag_colegio": 0.0059,
+      "estrato~naturaleza_colegio": 0.0028,
+      "estrato~zona": 0.0024,
+      "estrato~periodo": 0.0022,
+      "estrato~modelopedag_colegio": 0.0024,
+      "sexo~naturaleza_colegio": 0.0001,
+      "sexo~zona": 0.0004,
+      "sexo~periodo": 0.0,
+      "sexo~modelopedag_colegio": 0.0003,
+      "año~naturaleza_colegio": 0.0335,
+      "año~zona": 0.0322,
+      "año~periodo": 0.0274,
+      "año~modelopedag_colegio": 0.0166,
+      "estrato~sexo": 0.0008
+    },
+    "no_evaluables": [],
+    "max_cramer_v": 0.0335,
+    "umbral_independencia": 0.05
+  },
+  "privacidad": {
+    "cuasi_identificadores": [
+      "nombre_colegio",
+      "año",
+      "sexo",
+      "estrato",
+      "grupo"
+    ],
+    "k_minimo_observado": 1,
+    "grupos_con_k_menor_a_umbral": 707,
+    "filas_en_grupos_k_menor_a_umbral": 2155,
+    "pct_filas_en_riesgo": 14.69,
+    "umbral_k": 5,
+    "columnas_pii_presentes": [
+      "nroDoc",
+      "nombre1",
+      "nombre2",
+      "apellido1",
+      "apellido2"
+    ]
+  },
+  "descriptivos_global": {
+    "año": {
+      "2021": {
+        "n": 3781,
+        "media_global": 395.38,
+        "desv_est": 47.46
+      },
+      "2022": {
+        "n": 3723,
+        "media_global": 398.31,
+        "desv_est": 47.48
+      },
+      "2023": {
+        "n": 3653,
+        "media_global": 400.66,
+        "desv_est": 47.13
+      },
+      "2024": {
+        "n": 3509,
+        "media_global": 405.36,
+        "desv_est": 47.39
+      }
+    },
+    "periodo": {
+      "I": {
+        "n": 7350,
+        "media_global": 399.92,
+        "desv_est": 50.09
+      },
+      "II": {
+        "n": 7316,
+        "media_global": 399.73,
+        "desv_est": 44.75
+      }
+    },
+    "zona": {
+      "Rural": {
+        "n": 7331,
+        "media_global": 390.17,
+        "desv_est": 48.21
+      },
+      "Urbana": {
+        "n": 7335,
+        "media_global": 409.48,
+        "desv_est": 44.75
+      }
+    },
+    "naturaleza_colegio": {
+      "Privada": {
+        "n": 7323,
+        "media_global": 410.46,
+        "desv_est": 46.01
+      },
+      "Pública": {
+        "n": 7343,
+        "media_global": 389.22,
+        "desv_est": 46.59
+      }
+    },
+    "modelopedag_colegio": {
+      "Aprendizaje basado en proyectos": {
+        "n": 3693,
+        "media_global": 404.31,
+        "desv_est": 45.3
+      },
+      "Constructivista": {
+        "n": 3647,
+        "media_global": 401.1,
+        "desv_est": 47.8
+      },
+      "Pedagogía conceptual": {
+        "n": 3666,
+        "media_global": 398.84,
+        "desv_est": 46.73
+      },
+      "Tradicional": {
+        "n": 3660,
+        "media_global": 395.01,
+        "desv_est": 49.61
+      }
+    },
+    "estrato": {
+      "1": {
+        "n": 3252,
+        "media_global": 377.24,
+        "desv_est": 45.28
+      },
+      "2": {
+        "n": 3228,
+        "media_global": 388.89,
+        "desv_est": 44.44
+      },
+      "3": {
+        "n": 3203,
+        "media_global": 398.32,
+        "desv_est": 44.04
+      },
+      "4": {
+        "n": 2067,
+        "media_global": 414.09,
+        "desv_est": 43.29
+      },
+      "5": {
+        "n": 1744,
+        "media_global": 423.96,
+        "desv_est": 42.21
+      },
+      "6": {
+        "n": 1172,
+        "media_global": 435.67,
+        "desv_est": 39.91
+      }
+    },
+    "sexo": {
+      "Femenino": {
+        "n": 7345,
+        "media_global": 399.75,
+        "desv_est": 47.82
+      },
+      "Masculino": {
+        "n": 7321,
+        "media_global": 399.9,
+        "desv_est": 47.18
+      }
+    },
+    "nombre_colegio": {
+      "ABC": {
+        "n": 904,
+        "media_global": 398.0,
+        "desv_est": 41.8
+      },
+      "BCD": {
+        "n": 916,
+        "media_global": 372.41,
+        "desv_est": 48.36
+      },
+      "DEF": {
+        "n": 920,
+        "media_global": 390.21,
+        "desv_est": 46.18
+      },
+      "EFG": {
+        "n": 917,
+        "media_global": 418.2,
+        "desv_est": 44.03
+      },
+      "GHI": {
+        "n": 911,
+        "media_global": 375.41,
+        "desv_est": 47.25
+      },
+      "HIJ": {
+        "n": 904,
+        "media_global": 403.49,
+        "desv_est": 45.96
+      },
+      "JKL": {
+        "n": 932,
+        "media_global": 380.75,
+        "desv_est": 47.81
+      },
+      "KLM": {
+        "n": 922,
+        "media_global": 401.06,
+        "desv_est": 45.56
+      },
+      "MNO": {
+        "n": 915,
+        "media_global": 420.03,
+        "desv_est": 43.15
+      },
+      "NOP": {
+        "n": 921,
+        "media_global": 396.03,
+        "desv_est": 47.81
+      },
+      "PQR": {
+        "n": 931,
+        "media_global": 426.31,
+        "desv_est": 42.25
+      },
+      "RST": {
+        "n": 900,
+        "media_global": 399.83,
+        "desv_est": 42.09
+      },
+      "STU": {
+        "n": 908,
+        "media_global": 416.0,
+        "desv_est": 44.67
+      },
+      "VWX": {
+        "n": 905,
+        "media_global": 402.3,
+        "desv_est": 45.24
+      },
+      "XYZ": {
+        "n": 954,
+        "media_global": 403.6,
+        "desv_est": 40.96
+      },
+      "YZA": {
+        "n": 906,
+        "media_global": 393.36,
+        "desv_est": 47.3
+      }
+    }
+  }
+}

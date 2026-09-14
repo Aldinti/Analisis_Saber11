@@ -1,0 +1,22 @@
+# Core Data & OLAP
+duckdb>=1.1.0
+pandas>=2.2.0
+pyarrow>=17.0.0
+numpy>=1.26.0
+
+# Machine Learning & Explainability
+scikit-learn>=1.5.0
+xgboost>=2.1.0
+shap>=0.46.0
+
+# Visualization & Reporting
+matplotlib>=3.9.0
+
+# Configuration & Utilities
+pyyaml>=6.0.2
+python-dotenv>=1.0.1
+
+# Quality, Linting & Testing
+pytest>=8.3.0
+pytest-cov>=5.0.0
+ruff>=0.6.0

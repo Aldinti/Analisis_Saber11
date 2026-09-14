@@ -1,0 +1,164 @@
+{
+  "seed": 20260913,
+  "base_area_calibrada": 75.664,
+  "tamano_colegio_nuevo_por_anio": 230,
+  "prop_estrato": {
+    "1": 0.22,
+    "2": 0.22,
+    "3": 0.22,
+    "4": 0.14,
+    "5": 0.12,
+    "6": 0.08
+  },
+  "prop_sexo": {
+    "Femenino": 0.5,
+    "Masculino": 0.5
+  },
+  "sd_habilidad": 8.0,
+  "sd_ruido_area": 7.0,
+  "efecto_estrato": 2.5,
+  "efecto_privada": 4.0,
+  "efecto_rural": -4.0,
+  "efecto_periodo_I": 0.0,
+  "efecto_anio": 0.8,
+  "efecto_modelo": {
+    "Aprendizaje basado en proyectos": 1.5,
+    "Constructivista": 1.0,
+    "Pedagogía conceptual": 0.5,
+    "Tradicional": 0.0
+  },
+  "efecto_sexo_area_(femenino,masculino)": {
+    "Matemáticas": [
+      -1.5,
+      1.5
+    ],
+    "Lectura Crítica": [
+      1.5,
+      -1.5
+    ]
+  },
+  "efecto_ingles_privada": 5.0,
+  "conversion_area_a_global": "efecto común a las 5 áreas × 65/13 = ×5; efecto solo en Inglés × 5/13",
+  "colegios_nuevos": [
+    {
+      "nombre": "YZA",
+      "naturaleza": "Pública",
+      "zona": "Urbana",
+      "modelo": "Tradicional",
+      "periodo": "II",
+      "efecto_colegio": 0.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "DEF",
+      "naturaleza": "Pública",
+      "zona": "Rural",
+      "modelo": "Aprendizaje basado en proyectos",
+      "periodo": "I",
+      "efecto_colegio": 1.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "GHI",
+      "naturaleza": "Pública",
+      "zona": "Rural",
+      "modelo": "Constructivista",
+      "periodo": "I",
+      "efecto_colegio": -1.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "JKL",
+      "naturaleza": "Pública",
+      "zona": "Rural",
+      "modelo": "Pedagogía conceptual",
+      "periodo": "I",
+      "efecto_colegio": 0.5,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "BCD",
+      "naturaleza": "Pública",
+      "zona": "Rural",
+      "modelo": "Tradicional",
+      "periodo": "I",
+      "efecto_colegio": -0.5,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "MNO",
+      "naturaleza": "Privada",
+      "zona": "Urbana",
+      "modelo": "Aprendizaje basado en proyectos",
+      "periodo": "I",
+      "efecto_colegio": -1.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "PQR",
+      "naturaleza": "Privada",
+      "zona": "Urbana",
+      "modelo": "Constructivista",
+      "periodo": "I",
+      "efecto_colegio": 1.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "STU",
+      "naturaleza": "Privada",
+      "zona": "Urbana",
+      "modelo": "Pedagogía conceptual",
+      "periodo": "I",
+      "efecto_colegio": -0.5,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "EFG",
+      "naturaleza": "Privada",
+      "zona": "Urbana",
+      "modelo": "Tradicional",
+      "periodo": "I",
+      "efecto_colegio": 0.5,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "HIJ",
+      "naturaleza": "Privada",
+      "zona": "Rural",
+      "modelo": "Aprendizaje basado en proyectos",
+      "periodo": "II",
+      "efecto_colegio": 0.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "VWX",
+      "naturaleza": "Privada",
+      "zona": "Rural",
+      "modelo": "Constructivista",
+      "periodo": "II",
+      "efecto_colegio": 0.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "KLM",
+      "naturaleza": "Privada",
+      "zona": "Rural",
+      "modelo": "Pedagogía conceptual",
+      "periodo": "II",
+      "efecto_colegio": 0.0,
+      "n_grupos": 3
+    },
+    {
+      "nombre": "NOP",
+      "naturaleza": "Privada",
+      "zona": "Rural",
+      "modelo": "Tradicional",
+      "periodo": "II",
+      "efecto_colegio": 0.0,
+      "n_grupos": 3
+    }
+  ],
+  "sha256_original": "d7c84e2133b6ab8e8c1d188c7b7451e5a666768bb9b8d2439be2c7213466c13f",
+  "sha256_ampliado": "e34ff52d14ad2cd6c3b5b1432b402e7832369d4115e5534af97ee363cef6b00f",
+  "advertencia": "Datos y efectos ficticios; no representan la realidad."
+}

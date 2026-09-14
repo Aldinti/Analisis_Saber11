@@ -677,13 +677,15 @@ Columnas Silver: `anio SMALLINT, periodo VARCHAR, jornada VARCHAR, pais, departa
 | Objetivo | Modelo analítico estrella listo para BI y ML |
 | Actividades | Dimensiones y hechos (§14); claves sustitutas deterministas (`hash(nombre_colegio)`→entero vía `row_number()` ordenado por clave natural, estable entre ejecuciones); `agg_benchmark_distrito`; `seguridad_rectores`; vista `ml_dataset`; particionado hive `anio`/`periodo` en `fact_resultado` (requisito de `Objetivos.md`); `ROW_GROUP_SIZE` por defecto; compresión Snappy (predeterminada de DuckDB) |
 | Entrada | Silver aprobado por gate |
-| Proceso | `sql/gold/*.sql`; `COPY ... TO 'data/gold/fact_resultado' (FORMAT parquet, COMPRESSION snappy, PARTITION_BY (anio, periodo), OVERWRITE_OR_IGNORE)` |
+| Proceso | `PYTHONPATH=src python -m saber11.pipeline run --stage gold` (exige `dq_silver` aprobado para el Silver vigente; si no, código `5`), luego `run --stage dq --layer gold`. SQL: `sql/gold/01_dimensiones.sql` … `04_ml_y_seguridad.sql`; orquestación y verificación: `src/saber11/transform/gold.py`. `fact_resultado` con `PARTITION_BY (anio, periodo), WRITE_PARTITION_COLUMNS true, COMPRESSION snappy`; publicación por intercambio de carpeta |
 | Herramientas | DuckDB |
-| Salida / Entregable | `data/gold/{dim_*.parquet, fact_resultado/anio=*/periodo=*/*.parquet, agg_benchmark_distrito.parquet, seguridad_rectores.parquet}` |
+| Salida / Entregable | `data/gold/{dim_tiempo, dim_colegio, dim_ubicacion, dim_perfil_estudiante, dim_area, fact_resultado_area, agg_operativo_colegio, agg_benchmark_distrito, seguridad_rectores, ml_dataset}.parquet` + `fact_resultado/anio=*/periodo=*/*.parquet`; `docs/data_dictionary.md` (sección Gold); ADR-0005 y ADR-0017 |
 | Dependencias | F3, F5 |
 | Criterio de aceptación | Integridad referencial 100 %; `sum(filas fact) = filas Silver válidas`; lectura `read_parquet('data/gold/fact_resultado/**/*.parquet', hive_partitioning=true)` devuelve `anio`,`periodo`; promedios Gold = promedios Silver |
 | Riesgos | (a) Con 899 filas el particionado produce archivos muy pequeños; (b) columnas de partición pueden no estar dentro de los archivos y Power BI (conector Carpeta) no las lee de la ruta automáticamente |
-| Mitigación | (a) Aceptado por requisito, documentado en ADR; (b) **spike técnico**: inspeccionar esquema del Parquet generado; si faltan, derivarlas en Power Query desde `Folder Path` o duplicarlas (`anio_part`) en el contenido — decisión en ADR-005 |
+| Mitigación | (a) Aceptado por requisito (ADR-0005); (b) **spike realizado**: por defecto DuckDB no escribe las columnas de partición en los archivos; se usa `WRITE_PARTITION_COLUMNS true`, verificado en cada ejecución (ADR-0005) |
+
+Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `row_number()` (ADR-0017: `row_number()` desplaza las claves al llegar un colegio nuevo y rompería RLS); la tabla de seguridad se construye desde `config/seguridad_rectores.csv` (real, excluido de git) o, si no existe, desde el ejemplo ficticio `email_rector,nombre_colegio`, enlazando por nombre; `ml_dataset` se materializa como Parquet con solo las variables admitidas en §16.2. Antes de publicar se verifican filas, unicidad de claves, promedios Gold = Silver, coherencia de agregados y las 5 reglas DQ de Gold. Con los datos actuales no hay celdas suprimidas (grupo mínimo n = 10); la supresión se prueba con el fixture. DQ-PRI-003 se refinó: una dimensión con una sola categoría no requiere supresión complementaria (esa celda equivale al Total, también suprimido).
 
 ### F5 — Calidad de datos
 | Campo | Contenido |
@@ -955,7 +957,7 @@ erDiagram
 ## 15. Power BI y RLS
 
 ### 15.1 Conexión
-Parámetro `RutaGold` (ruta absoluta). Tablas de dimensión con conector **Parquet**; `fact_resultado` con conector **Carpeta** filtrando `.parquet` y combinando (según `Objetivos.md`). Si las columnas `anio/periodo` no están dentro de los archivos (spike F4), extraerlas del `Folder Path` en Power Query.
+Parámetro `RutaGold` (ruta absoluta). Tablas de dimensión con conector **Parquet**; `fact_resultado` con conector **Carpeta** filtrando `.parquet` y combinando (según `Objetivos.md`). Resultado del spike F4 (ADR-0005): `anio` y `periodo` están dentro de cada archivo, no hace falta extraerlas del `Folder Path`.
 
 ### 15.2 Medidas DAX (ejemplos)
 ```dax
@@ -1317,7 +1319,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | 002 | Formato | CSV, DuckDB file, Delta/Iceberg | **Parquet (Snappy)** | Requisito O1; abierto; Power BI lo lee | Columnar, tipado | Sin transacciones ACID ni time-travel | Almacenamiento Gold |
 | 003 | Particionamiento | Ninguno, por año, año+periodo | **anio/periodo** en `fact_resultado`; dims sin partición | Cumple O1 con nombres ASCII | Escalable a más años | Archivos diminutos hoy | Lectura BI/ML |
 | 004 | Modelo | Tabla plana, estrella, copo | **Estrella** + junk dim + agregado benchmark | Requisito O2; DAX simple | Rendimiento, claridad | Más tablas | BI |
-| 005 | Columnas de partición en BI | Derivar de ruta, duplicar en archivo, BI lee tablas sin partición | **Decidir tras spike F4** | Comportamiento a verificar | — | — | F6 |
+| 005 | Columnas de partición en BI | Derivar de ruta, duplicar en archivo, BI lee tablas sin partición | **Duplicar en archivo (`WRITE_PARTITION_COLUMNS true`)** — `docs/adr/0005-columnas-particion-power-bi.md` | Spike F4: DuckDB no las escribe por defecto | Power BI no parsea rutas; hive sigue funcionando | Dos columnas redundantes | F4, F6 |
+| 017 | Claves sustitutas | `row_number()` por clave natural, hash MD5 | **MD5 estable** — `docs/adr/0017-claves-sustitutas-estables.md` | `row_number()` cambia claves al agregar colegios | Estables para RLS y cargas nuevas | Colisión teórica (verificada) | F4, F6, F7 |
 | 006 | RLS | Relación bidireccional (Objetivos), tabla desconectada + `IN`, roles estáticos por colegio | **Tabla desconectada + filtro en dim_colegio** | Evita bidireccional; dinámico | Un rol para todos | DAX algo más complejo | F7 |
 | 007 | Benchmark distrital bajo RLS | `ALL()` (Objetivos), tabla agregada | **Tabla agregada no filtrada** | `ALL()` no puede quitar filtros RLS | Correcto bajo RLS | Riesgo divulgación (R15) | F7 |
 | 008 | Ridge vs XGBoost | Solo uno | **Ambos + baseline**, regla de parsimonia | Requisito O4; comparación honesta | Interpretabilidad + no linealidad | Más cómputo (irrelevante aquí) | F8 |

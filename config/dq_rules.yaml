@@ -222,14 +222,16 @@ rules:
   - id: DQ-PRI-003
     dimension: privacidad
     tabla: agg_operativo_colegio
-    descripcion: supresion complementaria (cuenta dimensiones colegio-anio-area con exactamente una celda suprimida)
+    descripcion: >
+      supresion complementaria (cuenta dimensiones colegio-anio-area con varias categorias y exactamente una celda
+      suprimida; con una sola categoria la celda coincide con el Total, que tambien queda suprimido)
     sql: >
       SELECT count(*) FROM (
         SELECT colegio_id, anio, area, dimension
         FROM agg_operativo_colegio
         WHERE dimension <> 'Total'
         GROUP BY colegio_id, anio, area, dimension
-        HAVING count(*) FILTER (WHERE suprimido) = 1
+        HAVING count(*) FILTER (WHERE suprimido) = 1 AND count(*) > 1
       )
     severidad: bloqueante
     umbral_max_fallos: 0

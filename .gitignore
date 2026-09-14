@@ -18,6 +18,7 @@ data/
 *.parquet
 *.csv
 !config/*.csv
+config/seguridad_rectores.csv
 !tests/fixtures/*.csv
 *.tmp
 

@@ -24,7 +24,7 @@ Analisis_Saber11/
 │   ├── settings.yaml
 │   ├── source_contract.yaml
 │   ├── dq_rules.yaml
-│   └── seguridad_rectores.example.csv
+│   └── seguridad_rectores.example.csv   # ficticio; el real (seguridad_rectores.csv) no se versiona
 ├── data/                    # Zona de datos (Ignorada por Git)
 │   ├── landing/             # CSV de entrada sin procesar
 │   ├── bronze/              # Copia inmutable + Parquet VARCHAR
@@ -81,15 +81,17 @@ Analisis_Saber11/
    .\.venv\Scripts\pytest.exe
    ```
 
-5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`):
+5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`, `gold`):
    ```powershell
    $env:PYTHONPATH = "src"
    .\.venv\Scripts\python.exe -m saber11.pipeline validate-source      # contrato del CSV de data/landing
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage bronze   # idempotente: reingestar el mismo archivo se omite
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage silver   # requiere SABER11_HMAC_KEY en .env
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage dq --layer silver   # quality gate antes de Gold
+   .\.venv\Scripts\python.exe -m saber11.pipeline run --stage gold   # exige el gate de Silver aprobado
+   .\.venv\Scripts\python.exe -m saber11.pipeline run --stage dq --layer gold     # quality gate antes de BI/ML
    ```
-   Códigos de salida: `0` éxito, omitido o gate aprobado, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada, `4` quality gate rechazado.
+   Códigos de salida: `0` éxito, omitido o gate aprobado, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada, `4` quality gate rechazado, `5` Gold bloqueado porque el Silver vigente no tiene el gate aprobado.
    Cada ejecución queda en `data/metadata/run_log.parquet`; los resultados de calidad en `data/metadata/dq_results.parquet` y los informes (contrato y `dq_<run_id>.md`) en `reports/quality/`.
 
 ---

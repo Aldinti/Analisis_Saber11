@@ -34,7 +34,7 @@ TABLAS_SILVER = {"silver_resultados", "silver_rechazos"}
 TABLAS_GOLD = {
     "dim_tiempo", "dim_colegio", "dim_ubicacion", "dim_perfil_estudiante", "dim_area",
     "fact_resultado", "fact_resultado_area", "agg_benchmark_distrito", "agg_operativo_colegio",
-    "seguridad_rectores",
+    "seguridad_rectores", "ml_dataset",
 }
 ESQUEMA_RESULTADOS = """
     run_id VARCHAR, capa VARCHAR, run_id_evaluado VARCHAR, ingest_id VARCHAR, regla_id VARCHAR,

@@ -165,6 +165,13 @@ def test_reglas_nuevas_detectan_su_defecto(con, reglas, regla_id, defecto, esper
     assert not pasa, f"{regla_id} no detecta el defecto inyectado"
 
 
+def test_pri_003_dimension_de_una_sola_categoria_no_requiere_complementaria(con, reglas):
+    con.execute("""INSERT INTO agg_operativo_colegio VALUES
+        (2, 2023, 'Global', 'Total', 'Total', 3, NULL, NULL, NULL, NULL, NULL, NULL, true),
+        (2, 2023, 'Global', 'grupo', '11-1', 3, NULL, NULL, NULL, NULL, NULL, NULL, true)""")
+    assert evaluar(con, reglas["DQ-PRI-003"]) == (0.0, True)
+
+
 def test_pri_002_respeta_k_min_de_settings(con, reglas):
     con.execute("UPDATE agg_operativo_colegio SET promedio = 400 WHERE categoria = '5'")  # n=3 < k_min=5
     assert not evaluar(con, reglas["DQ-PRI-002"])[1]

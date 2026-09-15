@@ -1,0 +1,57 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "fb498c3331d7b05273b4",
+  "position": {
+    "x": 1120,
+    "y": 525,
+    "z": 12000,
+    "height": 260,
+    "width": 780,
+    "tabOrder": 12000
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_perfil_estudiante"
+                    }
+                  },
+                  "Property": "estrato"
+                }
+              },
+              "queryRef": "dim_perfil_estudiante.estrato",
+              "nativeQueryRef": "estrato",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Global"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Global",
+              "nativeQueryRef": "Promedio Global"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

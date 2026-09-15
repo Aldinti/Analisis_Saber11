@@ -1,0 +1,31 @@
+/// Áreas evaluadas y su peso en el puntaje global.
+table dim_area
+	lineageTag: ab8c6e75-e8e3-4b28-b7f8-4cbc8c3a4ebc
+
+	column area_id
+		dataType: int64
+		isHidden
+		lineageTag: bb949077-45c6-4290-87a1-56357708738f
+		sourceColumn: area_id
+
+	column area
+		dataType: string
+		lineageTag: c4027f3e-cc9a-4ac7-82fc-4fc2d612e38c
+		sourceColumn: area
+		sortByColumn: area_id
+
+	column peso_global
+		dataType: int64
+		lineageTag: 53875064-25d0-4e96-b64a-16d180b1c72d
+		summarizeBy: none
+		sourceColumn: peso_global
+
+	partition dim_area = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\dim_area.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"area_id", Int64.Type}, {"area", type text}, {"peso_global", Int64.Type}})
+				in
+				    Tipos
+

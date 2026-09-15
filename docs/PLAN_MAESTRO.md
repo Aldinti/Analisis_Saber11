@@ -707,14 +707,25 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 | Objetivo | Tablero de mando para la Dirección de Calidad |
 | Actividades | Parámetro `RutaGold`; importar Parquet Gold; relaciones; tabla `_Medidas`; medidas (§15); páginas; formato; validación numérica contra SQL |
 | Entrada | Gold |
-| Herramientas | Power BI Desktop, Power Query, DAX |
-| Salida / Entregable | `powerbi/Saber11_Estrategico.pbix` (o `.pbip` — **Recomendación técnica adicional**: formato proyecto para control de versiones sin datos) + `docs/bi/medidas_dax.md` |
+| Herramientas | Power BI Desktop 2.157 (agosto 2026), Power Query, DAX, MCP de modelado de Power BI (modelo en vivo), DuckDB (KPIs de control) |
+| Proceso (F6) | 1) Modelo creado en vivo por MCP sobre Desktop abierto (parámetro, tablas, relaciones, medidas) y validado con consultas DAX; 2) SUP guarda como `.pbip` (PBIR); 3) SUP crea 3 visuales de muestra para fijar el formato PBIR exacto de su versión; 4) `scripts/generar_reporte_estrategico.py` genera las páginas validando cada campo contra el TMDL; 5) SUP revisa y da formato en Desktop |
+| Salida / Entregable | `powerbi/Saber11_Estrategico.pbip` (modelo TMDL + informe PBIR, sin datos: `.pbi/cache.abf` y `localSettings.json` excluidos de git) + `docs/bi/medidas_dax.md` (generado desde el TMDL) + `reports/bi/validacion_kpis_estrategico.md` |
 | Dependencias | F4 |
 | Criterio de aceptación | Cada KPI coincide con consulta SQL de control (tolerancia 0,01); segmentadores filtran todas las visuales; medidas no calculables muestran aviso explícito, no ceros |
 | Riesgos | Medidas de benchmarking sector/zona sin datos si se usa el CSV sin ampliar (H2) |
 | Mitigación | Depender de F1b; medidas con `BLANK()` + tarjeta de advertencia como salvaguarda; rótulo visible "Datos ficticios" en todas las páginas |
 
 **Páginas:** P1 Resumen (tarjetas: Promedio Global, Nº evaluados, variación interanual, % estudiantes ≥ percentil 75 distrital); P2 Áreas (barras agrupadas por área × colegio / estrato / sexo); P3 Tendencias 2021–2024 (líneas global y áreas); P4 Benchmarking (colegio vs distrito, modelo pedagógico, estrato, sexo; sector y zona condicionados a disponibilidad); P5 Distribución (histograma, boxplot por colegio). **Segmentadores:** año, colegio, estrato, sexo, área.
+
+**Implementación y lecciones F6 (cerrada, revisión visual del SUP aprobada):**
+- **Modelo semántico:** parámetro `RutaGold`; 8 tablas Import (dimensiones y benchmark con `Parquet.Document`; `fact_resultado` con `Folder.Files` + `Parquet.Document` sobre la carpeta particionada); relaciones muchos a uno de filtro simple. `fact_resultado_area` se relaciona directamente con `dim_tiempo`, `dim_colegio`, `dim_perfil_estudiante` y `dim_area`, **no** con `fact_resultado`, para evitar caminos de filtro ambiguos (consecuencia: `dim_ubicacion` no filtra puntajes por área). `agg_benchmark_distrito` queda desconectada: sus medidas filtran por `VALUES(dim_tiempo[anio])` y `VALUES(dim_area[area])`, sin `ALL()`, válido bajo RLS. `_Medidas` con 25 medidas en carpetas; IDs técnicos ocultos; `discourageImplicitMeasures`; columna `rango_global` (25 puntos) para el histograma.
+- **Ajustes de DAX frente a §15.2:** la variación interanual compara el año más reciente de la selección con el anterior (`Promedio Global Anio Actual` vs `Promedio Global AA`); `Promedio Distrito` pondera por `n` solo celdas no suprimidas; los avisos de sector y zona devuelven texto explícito en lugar de ceros.
+- **Validación (criterio de aceptación):** 21 KPIs en 6 escenarios (todo, 2024, Matemáticas 2024, ABC 2024, Femenino estrato 1 2024) = SQL de control (`tests/bi/kpi_control.sql`), diferencia máxima 5·10⁻¹⁷ frente a tolerancia 0,01.
+- **Informe:** 5 páginas (53 visuales), cada una con rótulo "Datos ficticios" y segmentadores de año, colegio, estrato, sexo y área. Los segmentadores **no están sincronizados entre páginas** (se puede hacer en Desktop). Power BI no trae diagrama de caja nativo: P5 usa una tabla de percentiles por colegio.
+- **Lección — conexión MCP:** `ListLocalInstances`/`Connect` fallan con "Acceso denegado" si la app del agente no corre como administrador (hay además un servicio de Analysis Services en el puerto 2383); con sesión elevada funciona. Las DLL de Power BI Desktop (Store) no se pueden cargar desde `WindowsApps`.
+- **Lección — formato PBIR:** no hay esquemas locales; se fijaron con visuales creadas en la versión del SUP (`visualContainer/2.12.0`, `page/2.1.0`, `pagesMetadata/1.1.0`, `report/3.3.0`). Roles: `Values` (tarjeta, segmentador, tabla), `Category`/`Y`/`Series` (gráficos).
+- **Fallo encontrado y corregido — tablas PBIR:** al seleccionar un colegio, P4 y P5 mostraban "Ha habido un error al representar el informe" (`desktop.PivotTableVisuals.min.js`: `Cannot read properties of undefined (reading 'isMeasure')`). Causa: el generador escribió `"active": true` en la columna de las tablas (`tableEx`); Desktop agregó `"active": false` a las medidas al guardar y trató la tabla como jerarquía de exploración. Corrección: `active` solo en `Category` de gráficos y `Values` de segmentadores; pruebas de regresión en `tests/unit/test_bi_estrategico.py`. Regla: una propiedad de formato no observada en un ejemplo real de la versión en uso no se escribe.
+- **Mantenimiento:** el informe ya tiene formato manual del SUP; el generador se niega a regenerar sin `--forzar`. Cambios de medidas: editar el modelo en Desktop (o por MCP) y regenerar `docs/bi/medidas_dax.md`. `RutaGold` es una ruta absoluta del equipo del SUP: actualizarla al mover el proyecto.
 
 ### F7 — Dashboard operativo y RLS
 | Campo | Contenido |
@@ -957,9 +968,11 @@ erDiagram
 ## 15. Power BI y RLS
 
 ### 15.1 Conexión
-Parámetro `RutaGold` (ruta absoluta). Tablas de dimensión con conector **Parquet**; `fact_resultado` con conector **Carpeta** filtrando `.parquet` y combinando (según `Objetivos.md`). Resultado del spike F4 (ADR-0005): `anio` y `periodo` están dentro de cada archivo, no hace falta extraerlas del `Folder Path`.
+Parámetro `RutaGold` (ruta absoluta). Tablas de dimensión con conector **Parquet**; `fact_resultado` con conector **Carpeta** filtrando `.parquet` y combinando (según `Objetivos.md`). Resultado del spike F4 (ADR-0005): `anio` y `periodo` están dentro de cada archivo, no hace falta extraerlas del `Folder Path`. Implementado en F6: `Folder.Files(RutaGold & "\fact_resultado")` → filtro `.parquet` → `Parquet.Document` → `Table.Combine`; filas cargadas idénticas a Gold.
 
 ### 15.2 Medidas DAX (ejemplos)
+> Diseño inicial. Las medidas implementadas y validadas en F6 están en `docs/bi/medidas_dax.md` (ver lecciones F6 en §8).
+
 ```dax
 Promedio Global = AVERAGE ( fact_resultado[puntaje_global] )
 Evaluados = COUNTROWS ( fact_resultado )
@@ -1259,8 +1272,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E10 | Gold estrella | F4 | Parquet | Dims, hechos, agregados | Integridad referencial |
 | E11 | Diccionario de datos | F3–F4 | MD | Columnas, tipos, clasificación | 100 % columnas |
 | E12 | Linaje | F4 | MD/Mermaid | CSV→Gold | Cada columna Gold trazada |
-| E13 | Dashboard estratégico | F6 | PBIX/PBIP | 5 páginas | KPIs = SQL |
-| E14 | Catálogo DAX | F6–F7 | MD | Medidas | Descritas y probadas |
+| E13 | Dashboard estratégico | F6 | PBIP (TMDL + PBIR) | 5 páginas, 53 visuales, rótulo de datos ficticios | 21/21 KPIs = SQL; revisión visual del SUP aprobada |
+| E14 | Catálogo DAX | F6–F7 | MD | Medidas (generado desde TMDL) | Descritas, validadas y sincronizadas por prueba |
 | E15 | Dashboard operativo + RLS | F7 | PBIX/PBIP | Roles + agregación/supresión de grupos pequeños | RLS-01..11 PASS |
 | E16 | Matriz de pruebas RLS | F7 | MD + PNG | Evidencias | 100 % |
 | E17 | Modelos entrenados | F8 | joblib/JSON | Baseline, Ridge, Lasso, XGB | Métricas registradas |
@@ -1299,7 +1312,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | R06 | Leakage | Alta si se sigue código original | Alto | Crítico | §18 + tests | Re-entrenar, invalidar resultados |
 | R07 | Confusión residual entre factores en datos ficticios | Baja | Medio | Bajo | Diseño ortogonal + validación Cramér V ≤ 0,05 en el generador | Regenerar con otra semilla o ajustar diseño |
 | R16 | Datos ficticios tomados como evidencia real | Media | Alto | Alto | Rótulo "Datos ficticios" en dashboards e informes; S7 | Retirar informes difundidos |
-| R17 | Agente no puede operar GUI de Power BI Desktop | Media | Medio | Medio | `.pbip` editable como texto; MCP de modelado Power BI | Tareas GUI asignadas al SUP |
+| R17 | Agente no puede operar GUI de Power BI Desktop | Media (materializado en F6) | Medio | Medio | Modelo en vivo por MCP (app como administrador); informe PBIR generado a partir de visuales de muestra del SUP; campos validados contra TMDL | Tareas GUI y revisión visual asignadas al SUP |
+| R18 | Formato PBIR incompatible con la versión de Desktop (visual no representa o informe no abre) | Media (materializado en F6: tablas con `active`) | Medio | Medio | Copiar formato de visuales reales de la versión en uso; no escribir propiedades no observadas; pruebas de regresión | Respaldo del informe formateado; corregir el JSON y reabrir |
 | R08 | RLS no efectivo en Desktop | Mitigado | Alto | Bajo | Publicación en Power BI Service/Fabric (Trial 60 días) con rol Viewer | Si vence el trial, limitar distribución de .pbix |
 | R09 | Incompatibilidades Power BI (particiones hive, rutas absolutas) | Media | Medio | Medio | Spike F4; parámetro de ruta | Tablas Gold sin partición para BI |
 | R10 | Reproducibilidad | Media | Alto | Alto | Lock, semillas, run_log | Reconstruir desde Bronze raw |
@@ -1370,7 +1384,7 @@ pytest -q
 - [ ] Pipeline E2E código 0; re-ejecución idéntica
 - [ ] 100 % reglas DQ bloqueantes PASS; informe archivado
 - [ ] Silver/Gold/Power BI sin PII (test DQ-PRI-001)
-- [ ] KPIs validados contra SQL
+- [x] KPIs del dashboard estratégico validados contra SQL (F6, 21/21)
 - [ ] RLS-01..11 PASS con evidencias; limitación Desktop comunicada
 - [ ] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003, `k_min` documentado)
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer

@@ -1,0 +1,32 @@
+relationship fact_resultado_tiempo
+	fromColumn: fact_resultado.tiempo_id
+	toColumn: dim_tiempo.tiempo_id
+
+relationship fact_resultado_colegio
+	fromColumn: fact_resultado.colegio_id
+	toColumn: dim_colegio.colegio_id
+
+relationship fact_resultado_ubicacion
+	fromColumn: fact_resultado.ubicacion_id
+	toColumn: dim_ubicacion.ubicacion_id
+
+relationship fact_resultado_perfil
+	fromColumn: fact_resultado.perfil_id
+	toColumn: dim_perfil_estudiante.perfil_id
+
+relationship fact_area_tiempo
+	fromColumn: fact_resultado_area.tiempo_id
+	toColumn: dim_tiempo.tiempo_id
+
+relationship fact_area_colegio
+	fromColumn: fact_resultado_area.colegio_id
+	toColumn: dim_colegio.colegio_id
+
+relationship fact_area_perfil
+	fromColumn: fact_resultado_area.perfil_id
+	toColumn: dim_perfil_estudiante.perfil_id
+
+relationship fact_area_area
+	fromColumn: fact_resultado_area.area_id
+	toColumn: dim_area.area_id
+

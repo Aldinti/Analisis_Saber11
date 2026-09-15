@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "038e4a60f705d333afce",
+  "position": {
+    "x": 720,
+    "y": 100,
+    "z": 7000,
+    "height": 130,
+    "width": 580,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Aviso Benchmark Sector"
+                }
+              },
+              "queryRef": "_Medidas.Aviso Benchmark Sector",
+              "nativeQueryRef": "Aviso Benchmark Sector"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

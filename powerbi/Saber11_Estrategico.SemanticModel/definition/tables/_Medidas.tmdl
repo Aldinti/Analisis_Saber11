@@ -1,0 +1,201 @@
+/// Tabla contenedora de medidas del dashboard estratégico.
+table _Medidas
+	lineageTag: f631dbb5-6d65-4851-b9d8-01181b479e89
+
+	/// Número de evaluaciones en el contexto de filtros.
+	measure Evaluados = COUNTROWS ( fact_resultado )
+		formatString: #,0
+		displayFolder: 1. Resumen
+		lineageTag: ab907a2b-e712-45c5-8563-b3c60af48add
+
+	/// Promedio del puntaje global (0-500).
+	measure 'Promedio Global' = AVERAGE ( fact_resultado[puntaje_global] )
+		formatString: #,0.0
+		displayFolder: 1. Resumen
+		lineageTag: a52ee0e5-7637-469b-b439-2d4f371743de
+
+	measure 'Mediana Global' = MEDIAN ( fact_resultado[puntaje_global] )
+		formatString: #,0.0
+		displayFolder: 5. Distribución
+		lineageTag: a971a73e-275e-41d4-a7fb-fa54bf15cd4c
+
+	measure 'Percentil 25 Global' = PERCENTILE.INC ( fact_resultado[puntaje_global], 0.25 )
+		formatString: #,0.0
+		displayFolder: 5. Distribución
+		lineageTag: 5fcc8081-eb1d-4e3f-a5d6-e01b8fdf73bc
+
+	/// Percentil 75 del puntaje global en el contexto actual (p. ej. por colegio).
+	measure 'Percentil 75 Colegio' = PERCENTILE.INC ( fact_resultado[puntaje_global], 0.75 )
+		formatString: #,0.0
+		displayFolder: 5. Distribución
+		lineageTag: c3f5d3e7-581c-4487-81e3-0f25d63d7408
+
+	measure 'Desviacion Estandar Global' = STDEV.S ( fact_resultado[puntaje_global] )
+		formatString: #,0.0
+		displayFolder: 5. Distribución
+		lineageTag: 35461a60-c5ad-4528-90a6-139842a2065d
+
+	/// Promedio global del año más reciente dentro de la selección.
+	measure 'Promedio Global Anio Actual' =
+			VAR AnioActual = MAX ( dim_tiempo[anio] )
+			RETURN
+			    CALCULATE ( [Promedio Global], dim_tiempo[anio] = AnioActual )
+		formatString: #,0.0
+		displayFolder: 3. Tendencias
+		lineageTag: 8f1345c3-2be8-4f1f-9875-e9f293c270c4
+
+	/// Promedio global del año anterior al más reciente seleccionado.
+	measure 'Promedio Global AA' =
+			VAR AnioActual = MAX ( dim_tiempo[anio] )
+			RETURN
+			    CALCULATE ( [Promedio Global], REMOVEFILTERS ( dim_tiempo ), dim_tiempo[anio] = AnioActual - 1 )
+		formatString: #,0.0
+		displayFolder: 3. Tendencias
+		lineageTag: 2cdc48d5-03fb-46a8-b2c6-6bbee8839e70
+
+	/// Variación relativa del promedio global frente al año anterior.
+	measure 'Variacion Interanual' = DIVIDE ( [Promedio Global Anio Actual] - [Promedio Global AA], [Promedio Global AA] )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 3. Tendencias
+		lineageTag: 939fe943-3421-4b9a-a085-b8841c4f9b8d
+
+	/// P75 del distrito para los años seleccionados, ignorando filtros de colegio, ubicación y perfil.
+	measure 'Percentil 75 Distrital' =
+			CALCULATE (
+			    PERCENTILE.INC ( fact_resultado[puntaje_global], 0.75 ),
+			    REMOVEFILTERS ( dim_colegio ),
+			    REMOVEFILTERS ( dim_ubicacion ),
+			    REMOVEFILTERS ( dim_perfil_estudiante )
+			)
+		formatString: #,0.0
+		displayFolder: 1. Resumen
+		lineageTag: 786fc3b0-098b-485d-a649-26229f204d7f
+
+	/// Proporción de estudiantes de la selección con puntaje global mayor o igual al P75 distrital.
+	measure 'Pct Estudiantes >= P75 Distrital' =
+			VAR Umbral = [Percentil 75 Distrital]
+			RETURN
+			    DIVIDE ( CALCULATE ( COUNTROWS ( fact_resultado ), fact_resultado[puntaje_global] >= Umbral ), [Evaluados] )
+		formatString: 0.0%
+		displayFolder: 1. Resumen
+		lineageTag: 0bbf1efc-f975-4ecd-95ec-de8ff7d2aa23
+
+	/// Promedio del puntaje por área (0-100).
+	measure 'Promedio Area' = AVERAGE ( fact_resultado_area[puntaje] )
+		formatString: #,0.0
+		displayFolder: 2. Áreas
+		lineageTag: b0d07667-d53d-42f2-853b-a2108a46c199
+
+	measure 'Promedio Publica' = CALCULATE ( [Promedio Global], dim_colegio[naturaleza_colegio] = "Pública" )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: 7a020e2a-745e-43fd-8f3b-8d55503f6f41
+
+	measure 'Promedio Privada' = CALCULATE ( [Promedio Global], dim_colegio[naturaleza_colegio] = "Privada" )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: 79e0a218-f117-43d4-81a7-3c611175eaf1
+
+	measure 'Promedio Urbana' = CALCULATE ( [Promedio Global], dim_ubicacion[zona] = "Urbana" )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: f3ad9330-1499-42cf-9071-15cd4a9fb61d
+
+	measure 'Promedio Rural' = CALCULATE ( [Promedio Global], dim_ubicacion[zona] = "Rural" )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: 4d9a41f6-4e70-4e8b-9dba-8d0dc7516cf3
+
+	/// Pública menos Privada. BLANK si falta alguno de los dos sectores en la selección.
+	measure 'Diferencial Sector' =
+			VAR Pub = [Promedio Publica]
+			VAR Priv = [Promedio Privada]
+			RETURN
+			    IF ( ISBLANK ( Pub ) || ISBLANK ( Priv ), BLANK (), Pub - Priv )
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: c5f61201-45d3-42f9-bd4e-cb8a824cd811
+
+	/// Urbana menos Rural. BLANK si falta alguna de las dos zonas en la selección.
+	measure 'Diferencial Zona' =
+			VAR Urb = [Promedio Urbana]
+			VAR Rur = [Promedio Rural]
+			RETURN
+			    IF ( ISBLANK ( Urb ) || ISBLANK ( Rur ), BLANK (), Urb - Rur )
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: bcc2fd3c-516a-4d3e-bf90-0423dff9abb5
+
+	/// Texto de advertencia cuando el diferencial de sector no es calculable.
+	measure 'Aviso Benchmark Sector' = IF ( ISBLANK ( [Diferencial Sector] ), "Sin datos de colegios públicos y privados para la selección", "" )
+		displayFolder: 4. Benchmarking
+		lineageTag: 97664bd8-87c3-4341-9afd-9199a0846352
+
+	/// Texto de advertencia cuando el diferencial de zona no es calculable.
+	measure 'Aviso Benchmark Zona' = IF ( ISBLANK ( [Diferencial Zona] ), "Sin datos de zona urbana y rural para la selección", "" )
+		displayFolder: 4. Benchmarking
+		lineageTag: e7a5fc08-b6f9-4c6d-9bde-6bae2497a414
+
+	/// Promedio global distrital ponderado por n desde agg_benchmark_distrito (celdas no suprimidas) para los años seleccionados. No usa ALL(): válido también bajo RLS.
+	measure 'Promedio Distrito' =
+			VAR Filas =
+			    FILTER (
+			        agg_benchmark_distrito,
+			        agg_benchmark_distrito[area] = "Global"
+			            && agg_benchmark_distrito[dimension] = "Total"
+			            && agg_benchmark_distrito[anio] IN VALUES ( dim_tiempo[anio] )
+			            && NOT agg_benchmark_distrito[suprimido]
+			    )
+			RETURN
+			    DIVIDE (
+			        SUMX ( Filas, agg_benchmark_distrito[promedio] * agg_benchmark_distrito[n] ),
+			        SUMX ( Filas, agg_benchmark_distrito[n] )
+			    )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: c8cff5bd-5cc5-4f17-b3fb-d07966cfa5eb
+
+	/// Promedio distrital por área (áreas seleccionadas en dim_area), ponderado por n.
+	measure 'Promedio Distrito Area' =
+			VAR Filas =
+			    FILTER (
+			        agg_benchmark_distrito,
+			        agg_benchmark_distrito[area] IN VALUES ( dim_area[area] )
+			            && agg_benchmark_distrito[dimension] = "Total"
+			            && agg_benchmark_distrito[anio] IN VALUES ( dim_tiempo[anio] )
+			            && NOT agg_benchmark_distrito[suprimido]
+			    )
+			RETURN
+			    DIVIDE (
+			        SUMX ( Filas, agg_benchmark_distrito[promedio] * agg_benchmark_distrito[n] ),
+			        SUMX ( Filas, agg_benchmark_distrito[n] )
+			    )
+		formatString: #,0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: 20c3356e-0353-4be1-929e-819be60cfb05
+
+	measure 'Brecha vs Distrito' = [Promedio Global] - [Promedio Distrito]
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: e91d893a-4d32-4888-b7a7-d6665cc5bb7d
+
+	measure 'Brecha Area vs Distrito' = [Promedio Area] - [Promedio Distrito Area]
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 4. Benchmarking
+		lineageTag: 041f0629-2bc3-49be-9cfc-e42f96e73e9c
+
+	/// Rótulo obligatorio en todas las páginas (plan F6).
+	measure 'Etiqueta Datos Ficticios' = "Datos ficticios · No representan resultados reales del ICFES"
+		displayFolder: 0. Etiquetas
+		lineageTag: dbd940da-5ee6-4c9f-bf29-614511505f38
+
+	column sin_uso
+		isHidden
+		lineageTag: 418a25de-a0d6-4159-aa31-cfce2f10d071
+		isNameInferred
+		sourceColumn: [sin_uso]
+
+	partition _Medidas = calculated
+		mode: import
+		source = ROW("sin_uso", BLANK())
+

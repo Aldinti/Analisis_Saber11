@@ -37,7 +37,7 @@ Analisis_Saber11/
 │   └── adr/                 # Decisiones arquitectónicas registradas
 ├── models/                  # Artefactos serializados y métricas por run_id
 ├── notebooks/               # Cuadernos de perfilamiento y análisis exploratorio
-├── powerbi/                 # Proyectos y reportes Power BI (.pbip / .pbix)
+├── powerbi/                 # Saber11_Estrategico.pbip: modelo TMDL + informe PBIR (sin datos)
 ├── reports/                 # Informes generados (calidad, perfilamiento, shap, sesgos)
 ├── scripts/                 # Scripts auxiliares (ej. generación ortogonal F1b)
 ├── sql/                     # Transformaciones SQL por capa
@@ -92,6 +92,7 @@ Analisis_Saber11/
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage dq --layer gold     # quality gate antes de BI/ML
    ```
    Códigos de salida: `0` éxito, omitido o gate aprobado, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada, `4` quality gate rechazado, `5` Gold bloqueado porque el Silver vigente no tiene el gate aprobado.
+   Para el dashboard estratégico abra `powerbi/Saber11_Estrategico.pbip` (si movió el proyecto, actualice el parámetro `RutaGold` en Transformar datos) y pulse *Actualizar*. KPIs de control: `python -m saber11.bi.kpi_control`; catálogo DAX: `python -m saber11.bi.catalogo_medidas`.
    Cada ejecución queda en `data/metadata/run_log.parquet`; los resultados de calidad en `data/metadata/dq_results.parquet` y los informes (contrato y `dq_<run_id>.md`) en `reports/quality/`.
 
 ---

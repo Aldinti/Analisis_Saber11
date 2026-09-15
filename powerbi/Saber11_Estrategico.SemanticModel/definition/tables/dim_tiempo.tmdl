@@ -1,0 +1,35 @@
+/// Periodos de aplicación (año × periodo).
+table dim_tiempo
+	lineageTag: 8a2069a4-8853-4fab-accb-aa7884a32cba
+
+	column tiempo_id
+		dataType: int64
+		isHidden
+		lineageTag: fddc24f0-e68f-4631-8afa-dbc77e1c1697
+		sourceColumn: tiempo_id
+
+	column anio
+		dataType: int64
+		lineageTag: 4b4b9e9b-5a25-4851-8d06-c25564629f1d
+		summarizeBy: none
+		sourceColumn: anio
+
+	column periodo
+		dataType: string
+		lineageTag: 1a94f12f-2ef3-49c7-a5a2-43c1a5dffef9
+		sourceColumn: periodo
+
+	column jornada
+		dataType: string
+		lineageTag: adbdce7c-e8b0-4112-89d1-be0caac1919a
+		sourceColumn: jornada
+
+	partition dim_tiempo = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\dim_tiempo.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"tiempo_id", Int64.Type}, {"anio", Int64.Type}, {"periodo", type text}, {"jornada", type text}})
+				in
+				    Tipos
+

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "Saber11_Estrategico"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "0ba9f1bf-674b-480d-82b9-b426ef3a384d"
+  }
+}

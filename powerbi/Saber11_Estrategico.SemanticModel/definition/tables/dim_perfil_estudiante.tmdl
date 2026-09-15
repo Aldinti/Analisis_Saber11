@@ -1,0 +1,30 @@
+/// Combinaciones de sexo y estrato (dimensión junk; sin seudónimo del estudiante).
+table dim_perfil_estudiante
+	lineageTag: aca6864e-74aa-4f02-a709-cb31c6f6d462
+
+	column perfil_id
+		dataType: int64
+		isHidden
+		lineageTag: a81311ff-016e-4694-94a1-0ef009e170e5
+		sourceColumn: perfil_id
+
+	column sexo
+		dataType: string
+		lineageTag: 92be673b-8976-409c-99ee-ae409f0aba1c
+		sourceColumn: sexo
+
+	column estrato
+		dataType: int64
+		lineageTag: e3ebe349-b531-41c8-ba7d-d49859878803
+		summarizeBy: none
+		sourceColumn: estrato
+
+	partition dim_perfil_estudiante = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\dim_perfil_estudiante.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"perfil_id", Int64.Type}, {"sexo", type text}, {"estrato", Int64.Type}})
+				in
+				    Tipos
+

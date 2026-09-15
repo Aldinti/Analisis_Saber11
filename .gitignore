@@ -20,6 +20,7 @@ data/
 !config/*.csv
 config/seguridad_rectores.csv
 !tests/fixtures/*.csv
+!reports/bi/*.csv
 *.tmp
 
 # Secretos y credenciales
@@ -41,3 +42,7 @@ models/**/*.onnx
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+
+# Power BI Project (PBIP): cache con datos importados y ajustes locales/firmas
+powerbi/**/.pbi/cache.abf
+powerbi/**/.pbi/localSettings.json

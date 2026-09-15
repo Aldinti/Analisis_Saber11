@@ -1,0 +1,39 @@
+/// Ubicación geográfica y zona.
+table dim_ubicacion
+	lineageTag: 021605ae-f91f-43d1-a31b-329581b9d58c
+
+	column ubicacion_id
+		dataType: int64
+		isHidden
+		lineageTag: 5786d4a3-2a20-4584-ae13-04f55a1b3aa3
+		sourceColumn: ubicacion_id
+
+	column pais
+		dataType: string
+		lineageTag: 70234990-187b-4916-9bd1-d8fb44f51c43
+		sourceColumn: pais
+
+	column departamento
+		dataType: string
+		lineageTag: 1278c6b4-213a-4b05-bb39-2ba8159442b6
+		sourceColumn: departamento
+
+	column municipio
+		dataType: string
+		lineageTag: 1195a4cd-7290-4bae-b8f1-32e4f7694723
+		sourceColumn: municipio
+
+	column zona
+		dataType: string
+		lineageTag: a3dab9df-4726-4b97-a958-3278867052c3
+		sourceColumn: zona
+
+	partition dim_ubicacion = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\dim_ubicacion.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"ubicacion_id", Int64.Type}, {"pais", type text}, {"departamento", type text}, {"municipio", type text}, {"zona", type text}})
+				in
+				    Tipos
+

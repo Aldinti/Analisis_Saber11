@@ -1,0 +1,27 @@
+/// Modelo semántico del dashboard estratégico Saber 11 (datos ficticios). Fuente: data/gold vía parámetro RutaGold.
+model Model
+	culture: es-ES
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: es-ES
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
+
+ref table dim_tiempo
+ref table dim_colegio
+ref table dim_ubicacion
+ref table dim_perfil_estudiante
+ref table dim_area
+ref table fact_resultado
+ref table fact_resultado_area
+ref table agg_benchmark_distrito
+ref table _Medidas
+
+ref cultureInfo es-ES
+

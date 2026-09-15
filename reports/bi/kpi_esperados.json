@@ -1,0 +1,107 @@
+[
+  {
+    "escenario": "Todos",
+    "kpi": "Evaluados",
+    "valor": 14666.0
+  },
+  {
+    "escenario": "Todos",
+    "kpi": "Promedio Global",
+    "valor": 399.8251056866221
+  },
+  {
+    "escenario": "Todos",
+    "kpi": "Percentil 75 Colegio",
+    "valor": 433.0
+  },
+  {
+    "escenario": "Todos",
+    "kpi": "Mediana Global",
+    "valor": 401.0
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Evaluados",
+    "valor": 3509.0
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Promedio Global",
+    "valor": 405.3585066970647
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Promedio Global AA",
+    "valor": 400.6564467560909
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Variacion Interanual",
+    "valor": 0.011735889885321926
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Percentil 75 Distrital",
+    "valor": 440.0
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Pct Estudiantes >= P75 Distrital",
+    "valor": 0.2519236249643773
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Diferencial Sector",
+    "valor": -21.76727041689071
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Diferencial Zona",
+    "valor": 19.972349672340897
+  },
+  {
+    "escenario": "Año 2024",
+    "kpi": "Promedio Distrito",
+    "valor": 405.3585066970647
+  },
+  {
+    "escenario": "Año 2024 · Matemáticas",
+    "kpi": "Promedio Area",
+    "valor": 80.7600455970362
+  },
+  {
+    "escenario": "Año 2024 · Matemáticas",
+    "kpi": "Promedio Distrito Area",
+    "valor": 80.7600455970362
+  },
+  {
+    "escenario": "ABC 2024",
+    "kpi": "Evaluados",
+    "valor": 128.0
+  },
+  {
+    "escenario": "ABC 2024",
+    "kpi": "Promedio Global",
+    "valor": 407.1796875
+  },
+  {
+    "escenario": "ABC 2024",
+    "kpi": "Brecha vs Distrito",
+    "valor": 1.8211808029353165
+  },
+  {
+    "escenario": "ABC 2024",
+    "kpi": "Pct Estudiantes >= P75 Distrital",
+    "valor": 0.21875
+  },
+  {
+    "escenario": "Femenino estrato 1 2024",
+    "kpi": "Promedio Global",
+    "valor": 382.6666666666667
+  },
+  {
+    "escenario": "Femenino estrato 1 2024",
+    "kpi": "Evaluados",
+    "valor": 390.0
+  }
+]

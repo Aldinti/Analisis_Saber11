@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "95a41a299ecddd3aa23c",
+  "position": {
+    "x": 320,
+    "y": 100,
+    "z": 6000,
+    "height": 130,
+    "width": 380,
+    "tabOrder": 6000
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Diferencial Sector"
+                }
+              },
+              "queryRef": "_Medidas.Diferencial Sector",
+              "nativeQueryRef": "Diferencial Sector"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

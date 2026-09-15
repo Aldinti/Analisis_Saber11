@@ -1,0 +1,4 @@
+/// Ruta absoluta a la carpeta Gold del lakehouse (data/gold). Cambiar al mover el proyecto.
+expression RutaGold = "C:\Users\aldin\Documents\Maestria\Sem_3\Seminario\Analisis_Saber11\data\gold" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: c2e3f34e-2e34-442a-884c-8e4ec4419084
+

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "d9d45af7db897e151ff8",
+  "position": {
+    "x": 1120,
+    "y": 250,
+    "z": 11000,
+    "height": 260,
+    "width": 780,
+    "tabOrder": 11000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_colegio"
+                    }
+                  },
+                  "Property": "modelo_pedagogico"
+                }
+              },
+              "queryRef": "dim_colegio.modelo_pedagogico",
+              "nativeQueryRef": "modelo_pedagogico",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Global"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Global",
+              "nativeQueryRef": "Promedio Global"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

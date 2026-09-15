@@ -1,0 +1,76 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "f85b178537e503e43b7c",
+  "position": {
+    "x": 1120,
+    "y": 100,
+    "z": 7000,
+    "height": 470,
+    "width": 780,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "clusteredBarChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_area"
+                    }
+                  },
+                  "Property": "area"
+                }
+              },
+              "queryRef": "dim_area.area",
+              "nativeQueryRef": "area",
+              "active": true
+            }
+          ]
+        },
+        "Series": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_perfil_estudiante"
+                    }
+                  },
+                  "Property": "estrato"
+                }
+              },
+              "queryRef": "dim_perfil_estudiante.estrato",
+              "nativeQueryRef": "estrato",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Area"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Area",
+              "nativeQueryRef": "Promedio Area"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

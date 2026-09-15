@@ -1,0 +1,48 @@
+/// Puntaje por área (5 filas por evaluación).
+table fact_resultado_area
+	lineageTag: 588fb0b8-7c18-4558-bc51-4f11ab28d63f
+
+	column resultado_id
+		dataType: int64
+		isHidden
+		lineageTag: 3de4061a-37a5-4006-b871-b2446e56cd88
+		sourceColumn: resultado_id
+
+	column area_id
+		dataType: int64
+		isHidden
+		lineageTag: ba5e841f-e092-4b2a-90bc-24a81be97985
+		sourceColumn: area_id
+
+	column puntaje
+		dataType: int64
+		lineageTag: dbbab420-fa79-49ee-82f6-9b19c7eb1e17
+		sourceColumn: puntaje
+
+	column tiempo_id
+		dataType: int64
+		isHidden
+		lineageTag: 18181c88-6a9b-4f91-b645-0c2be1a682c9
+		sourceColumn: tiempo_id
+
+	column colegio_id
+		dataType: int64
+		isHidden
+		lineageTag: 678eaa76-317f-4d0a-95df-034ce91a7cba
+		sourceColumn: colegio_id
+
+	column perfil_id
+		dataType: int64
+		isHidden
+		lineageTag: 7329fecc-9206-41d4-a850-bfa94f84e9f7
+		sourceColumn: perfil_id
+
+	partition fact_resultado_area = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\fact_resultado_area.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"resultado_id", Int64.Type}, {"area_id", Int64.Type}, {"puntaje", Int64.Type}, {"tiempo_id", Int64.Type}, {"colegio_id", Int64.Type}, {"perfil_id", Int64.Type}})
+				in
+				    Tipos
+

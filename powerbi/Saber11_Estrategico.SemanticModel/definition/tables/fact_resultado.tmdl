@@ -1,0 +1,109 @@
+/// Una fila por evaluación. Se lee la carpeta particionada anio/periodo (columnas incluidas en los archivos, ADR-0005).
+table fact_resultado
+	lineageTag: bc871d93-a419-4ffa-a339-d4fb734a38b1
+
+	column resultado_id
+		dataType: int64
+		isHidden
+		lineageTag: 1cf2558b-9206-4842-97af-031d68b3006b
+		sourceColumn: resultado_id
+
+	column tiempo_id
+		dataType: int64
+		isHidden
+		lineageTag: 81e695b1-28b8-4cba-ae51-3198cf093ecb
+		sourceColumn: tiempo_id
+
+	column colegio_id
+		dataType: int64
+		isHidden
+		lineageTag: 5ba825b7-776a-40da-a812-1e6e0e2b1874
+		sourceColumn: colegio_id
+
+	column ubicacion_id
+		dataType: int64
+		isHidden
+		lineageTag: 6685cada-a29a-4238-9499-7da7dd0ff2cd
+		sourceColumn: ubicacion_id
+
+	column perfil_id
+		dataType: int64
+		isHidden
+		lineageTag: 6de43724-e35d-44f6-87d5-c8ea730d45a4
+		sourceColumn: perfil_id
+
+	column grupo
+		dataType: string
+		lineageTag: 9f2cc176-f147-4948-a0ae-50130d0f12e5
+		sourceColumn: grupo
+
+	column puntaje_global
+		dataType: int64
+		lineageTag: f92760ef-1130-414c-ac11-e339d506e3bc
+		sourceColumn: puntaje_global
+
+	column punt_lectura_critica
+		dataType: int64
+		lineageTag: a64c3376-d1c3-475b-996f-e72e4a7ec17d
+		sourceColumn: punt_lectura_critica
+
+	column punt_matematicas
+		dataType: int64
+		lineageTag: 7caec9ee-d6f7-41e1-9a86-61bbd098729b
+		sourceColumn: punt_matematicas
+
+	column punt_sociales
+		dataType: int64
+		lineageTag: 09956941-ab20-46b4-858b-9ef8a45d7b70
+		sourceColumn: punt_sociales
+
+	column punt_ciencias
+		dataType: int64
+		lineageTag: 4d0eacd5-a823-4655-8786-f03853d73861
+		sourceColumn: punt_ciencias
+
+	column punt_ingles
+		dataType: int64
+		lineageTag: c75e129a-f39d-49d1-90aa-813a61cdb4f4
+		sourceColumn: punt_ingles
+
+	column anio
+		dataType: int64
+		isHidden
+		lineageTag: c9e2c65b-c5f5-45c8-b715-9cc7575966ee
+		summarizeBy: none
+		sourceColumn: anio
+
+	column periodo
+		dataType: string
+		isHidden
+		lineageTag: 7588eac0-c118-4a63-962a-f5f687a2af0f
+		sourceColumn: periodo
+
+	/// Inicio del rango de 25 puntos (orden del histograma).
+	column rango_global_inicio = INT ( fact_resultado[puntaje_global] / 25 ) * 25
+		dataType: int64
+		isHidden
+		lineageTag: e5677437-8af6-4bcd-9a63-349c4a25732d
+		summarizeBy: none
+
+	/// Rango de 25 puntos del puntaje global para el histograma (p. ej. 400-424).
+	column rango_global =
+			VAR Inicio = INT ( fact_resultado[puntaje_global] / 25 ) * 25
+			RETURN FORMAT ( Inicio, "0" ) & "-" & FORMAT ( MIN ( Inicio + 24, 500 ), "0" )
+		dataType: string
+		lineageTag: 13b6cca5-a8b6-418e-b251-aa8741a20833
+		sortByColumn: rango_global_inicio
+
+	partition fact_resultado = m
+		mode: import
+		source =
+				let
+				    Archivos = Folder.Files(RutaGold & "\fact_resultado"),
+				    SoloParquet = Table.SelectRows(Archivos, each Text.Lower([Extension]) = ".parquet"),
+				    Tablas = List.Transform(SoloParquet[Content], each Parquet.Document(_)),
+				    Combinada = Table.Combine(Tablas),
+				    Tipos = Table.TransformColumnTypes(Combinada, {{"resultado_id", Int64.Type}, {"tiempo_id", Int64.Type}, {"colegio_id", Int64.Type}, {"ubicacion_id", Int64.Type}, {"perfil_id", Int64.Type}, {"grupo", type text}, {"puntaje_global", Int64.Type}, {"punt_lectura_critica", Int64.Type}, {"punt_matematicas", Int64.Type}, {"punt_sociales", Int64.Type}, {"punt_ciencias", Int64.Type}, {"punt_ingles", Int64.Type}, {"anio", Int64.Type}, {"periodo", type text}})
+				in
+				    Tipos
+

@@ -1,0 +1,71 @@
+/// Benchmark distrital con supresión de grupos pequeños; sin relación con dim_colegio (no lo filtra RLS).
+table agg_benchmark_distrito
+	lineageTag: 58a0bdda-e23f-48a7-a833-a1eb867fb10c
+
+	column anio
+		dataType: int64
+		lineageTag: 4680e1e3-c1bd-4f50-8a32-790ffb1bdea2
+		summarizeBy: none
+		sourceColumn: anio
+
+	column area
+		dataType: string
+		lineageTag: e15190ac-2b5d-4bd9-9421-bd57b8b4a3c5
+		sourceColumn: area
+
+	column dimension
+		dataType: string
+		lineageTag: d52f8cdd-13ed-4a28-ae9c-fa8db8bcbe58
+		sourceColumn: dimension
+
+	column categoria
+		dataType: string
+		lineageTag: 4e6d3a55-e6e3-4402-8865-bc092e4871c2
+		sourceColumn: categoria
+
+	column n
+		dataType: int64
+		lineageTag: 320fa730-76ca-4451-b5eb-77588a4c4169
+		summarizeBy: none
+		sourceColumn: n
+
+	column n_colegios
+		dataType: int64
+		lineageTag: 9d6d6a1b-621a-4f71-bc71-3e70bfe16924
+		summarizeBy: none
+		sourceColumn: n_colegios
+
+	column promedio
+		dataType: double
+		lineageTag: 0c20da97-02eb-4fb8-b741-6e4a99a7ea7e
+		sourceColumn: promedio
+
+	column p25
+		dataType: double
+		lineageTag: 93b6c4d5-ad13-407d-acc4-2aef72f7e14c
+		sourceColumn: p25
+
+	column p50
+		dataType: double
+		lineageTag: 371e3422-7d22-4082-83d2-b64754c46a9c
+		sourceColumn: p50
+
+	column p75
+		dataType: double
+		lineageTag: 2d1fab07-569c-43bc-af7d-361483442907
+		sourceColumn: p75
+
+	column suprimido
+		dataType: boolean
+		lineageTag: 71d707b3-d677-4ee3-84df-768cff08dce6
+		sourceColumn: suprimido
+
+	partition agg_benchmark_distrito = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\agg_benchmark_distrito.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"anio", Int64.Type}, {"area", type text}, {"dimension", type text}, {"categoria", type text}, {"n", Int64.Type}, {"n_colegios", Int64.Type}, {"promedio", type number}, {"p25", type number}, {"p50", type number}, {"p75", type number}, {"suprimido", type logical}})
+				in
+				    Tipos
+

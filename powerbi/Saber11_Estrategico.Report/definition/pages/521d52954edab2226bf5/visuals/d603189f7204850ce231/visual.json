@@ -1,0 +1,38 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "d603189f7204850ce231",
+  "position": {
+    "x": 1320,
+    "y": 100,
+    "z": 8000,
+    "height": 130,
+    "width": 280,
+    "tabOrder": 8000
+  },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Diferencial Zona"
+                }
+              },
+              "queryRef": "_Medidas.Diferencial Zona",
+              "nativeQueryRef": "Diferencial Zona"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

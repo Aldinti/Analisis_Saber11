@@ -1,0 +1,28 @@
+/// Modelo semántico del dashboard operativo Saber 11 (datos ficticios): solo agregados con supresión de grupos pequeños y RLS por colegio.
+model Model
+	culture: es-ES
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: es-ES
+	valueFilterBehavior: independent
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
+
+ref table dim_colegio
+ref table agg_operativo_colegio
+ref table agg_benchmark_distrito
+ref table seguridad_rectores
+ref table dim_anio
+ref table dim_area_operativa
+ref table _Medidas
+
+ref role Rol_Rector
+ref role Rol_Direccion
+
+ref cultureInfo es-ES
+

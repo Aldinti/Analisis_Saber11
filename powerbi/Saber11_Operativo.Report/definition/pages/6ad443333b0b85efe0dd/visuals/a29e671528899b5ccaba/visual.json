@@ -1,0 +1,165 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "a29e671528899b5ccaba",
+  "position": {
+    "x": 320,
+    "y": 260,
+    "z": 12000,
+    "height": 800,
+    "width": 1580,
+    "tabOrder": 12000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_anio"
+                    }
+                  },
+                  "Property": "anio"
+                }
+              },
+              "queryRef": "dim_anio.anio",
+              "nativeQueryRef": "anio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Evaluados Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Evaluados Colegio",
+              "nativeQueryRef": "Evaluados Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Percentil 10 Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Percentil 10 Colegio",
+              "nativeQueryRef": "Percentil 10 Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Percentil 25 Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Percentil 25 Colegio",
+              "nativeQueryRef": "Percentil 25 Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Mediana Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Mediana Colegio",
+              "nativeQueryRef": "Mediana Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Percentil 75 Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Percentil 75 Colegio",
+              "nativeQueryRef": "Percentil 75 Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Percentil 90 Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Percentil 90 Colegio",
+              "nativeQueryRef": "Percentil 90 Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Colegio",
+              "nativeQueryRef": "Promedio Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Distrito"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Distrito",
+              "nativeQueryRef": "Promedio Distrito"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -1,0 +1,231 @@
+/// Tabla contenedora de medidas del dashboard operativo.
+table _Medidas
+	lineageTag: c460995a-410c-4905-b5e6-7c5430168c7b
+
+	/// Umbral mínimo de estudiantes por celda mostrada. Debe coincidir con privacy.k_min de config/settings.yaml (prueba de sincronía).
+	measure 'K Min' = 5
+		formatString: 0
+		displayFolder: 0. Parámetros
+		lineageTag: 8beee65b-63e4-4cdb-bf68-0e831c66fa07
+
+	/// Área aplicada a las medidas: la seleccionada si es única; si no, Global.
+	measure 'Area Mostrada' = IF ( HASONEVALUE ( dim_area_operativa[area] ), VALUES ( dim_area_operativa[area] ), "Global" )
+		displayFolder: 0. Parámetros
+		lineageTag: 7dc2d1cb-2b1a-451f-b0c9-243d4d29973b
+
+	/// Rótulo obligatorio en todas las páginas.
+	measure 'Etiqueta Datos Ficticios' = "Datos ficticios · No representan resultados reales del ICFES"
+		displayFolder: 0. Parámetros
+		lineageTag: 4443b422-41d6-4c02-9eef-863acb5bd8f3
+
+	/// Suma de n de las celdas en contexto (uso interno; no mostrar en visuales).
+	measure 'Evaluados Grupo' = SUM ( agg_operativo_colegio[n] )
+		formatString: #,0
+		isHidden
+		displayFolder: 9. Internas
+		lineageTag: fe812991-d154-443f-8e6e-ec89aae75ddf
+
+	measure 'Celdas Suprimidas' = CALCULATE ( COUNTROWS ( agg_operativo_colegio ), agg_operativo_colegio[suprimido] = TRUE () )
+		formatString: 0
+		isHidden
+		displayFolder: 9. Internas
+		lineageTag: 38bae1f0-6533-43e4-8ab7-14cd7f71fffc
+
+	/// Promedio ponderado por n con salvaguardas de supresión (una dimensión, un área, n >= K Min, sin celdas suprimidas).
+	measure 'Promedio Celda' =
+			VAR N = [Evaluados Grupo]
+			RETURN
+			    IF (
+			        NOT HASONEVALUE ( agg_operativo_colegio[dimension] )
+			            || NOT HASONEVALUE ( agg_operativo_colegio[area] )
+			            || N < [K Min]
+			            || [Celdas Suprimidas] > 0,
+			        BLANK (),
+			        DIVIDE ( SUMX ( agg_operativo_colegio, agg_operativo_colegio[promedio] * agg_operativo_colegio[n] ), N )
+			    )
+		formatString: #,0.0
+		isHidden
+		displayFolder: 9. Internas
+		lineageTag: a2ee04fc-be91-4281-b3c3-8c1c6d39b4f2
+
+	/// Promedio del grupo en contexto (usar con una dimensión: sexo, estrato o grupo). BLANK si el grupo tiene menos de K Min estudiantes o hay celdas suprimidas.
+	measure 'Promedio Operativo' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE ( [Promedio Celda], dim_area_operativa[area] = AreaSel )
+		formatString: #,0.0
+		displayFolder: 2. Subgrupos
+		lineageTag: 58aeb8af-31ed-47d5-8968-fc5a0d675a22
+
+	/// Estudiantes del grupo; BLANK en grupos suprimidos (no se publican conteos de celdas suprimidas).
+	measure 'Evaluados Visible' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( [Evaluados Grupo] < [K Min] || [Celdas Suprimidas] > 0, BLANK (), [Evaluados Grupo] ),
+			        dim_area_operativa[area] = AreaSel
+			    )
+		formatString: #,0
+		displayFolder: 2. Subgrupos
+		lineageTag: 8cf5e419-9092-4e67-b2c4-e07a9bb2cbbf
+
+	/// Aviso cuando el grupo en contexto está suprimido.
+	measure 'Etiqueta Supresion' =
+			VAR AreaSel = [Area Mostrada]
+			VAR N = CALCULATE ( [Evaluados Grupo], dim_area_operativa[area] = AreaSel )
+			VAR Suprimidas = CALCULATE ( [Celdas Suprimidas], dim_area_operativa[area] = AreaSel )
+			RETURN
+			    IF ( N > 0 && ( N < [K Min] || Suprimidas > 0 ), "Grupo menor a " & [K Min] & " estudiantes: dato suprimido", "" )
+		displayFolder: 2. Subgrupos
+		lineageTag: 7f48c2ed-226d-4387-a788-184b3ef3a03e
+
+	/// Promedio total del colegio (dimensión Total) en el área mostrada y los años seleccionados.
+	measure 'Promedio Colegio' = CALCULATE ( [Promedio Operativo], agg_operativo_colegio[dimension] = "Total", REMOVEFILTERS ( agg_operativo_colegio[categoria] ) )
+		formatString: #,0.0
+		displayFolder: 1. Colegio
+		lineageTag: 7a161bec-e351-4ba8-a574-6e6c675a1bf8
+
+	/// Estudiantes evaluados del colegio (dimensión Total) en los años seleccionados.
+	measure 'Evaluados Colegio' = CALCULATE ( [Evaluados Visible], agg_operativo_colegio[dimension] = "Total", REMOVEFILTERS ( agg_operativo_colegio[categoria] ) )
+		formatString: #,0
+		displayFolder: 1. Colegio
+		lineageTag: 19c9ec35-1e91-4d23-bf08-77a7569b1d85
+
+	/// P10 del colegio; requiere un solo año (celda Total única).
+	measure 'Percentil 10 Colegio' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( COUNTROWS ( agg_operativo_colegio ) = 1, MAX ( agg_operativo_colegio[p10] ) ),
+			        dim_area_operativa[area] = AreaSel,
+			        agg_operativo_colegio[dimension] = "Total",
+			        REMOVEFILTERS ( agg_operativo_colegio[categoria] )
+			    )
+		formatString: #,0.0
+		displayFolder: 3. Distribución
+		lineageTag: 80432856-6e7a-421e-9251-653b22703616
+
+	measure 'Percentil 25 Colegio' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( COUNTROWS ( agg_operativo_colegio ) = 1, MAX ( agg_operativo_colegio[p25] ) ),
+			        dim_area_operativa[area] = AreaSel,
+			        agg_operativo_colegio[dimension] = "Total",
+			        REMOVEFILTERS ( agg_operativo_colegio[categoria] )
+			    )
+		formatString: #,0.0
+		displayFolder: 3. Distribución
+		lineageTag: 9eb007e3-465b-4e9e-bc4a-521350a71ddc
+
+	measure 'Mediana Colegio' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( COUNTROWS ( agg_operativo_colegio ) = 1, MAX ( agg_operativo_colegio[p50] ) ),
+			        dim_area_operativa[area] = AreaSel,
+			        agg_operativo_colegio[dimension] = "Total",
+			        REMOVEFILTERS ( agg_operativo_colegio[categoria] )
+			    )
+		formatString: #,0.0
+		displayFolder: 3. Distribución
+		lineageTag: 963a6580-7f08-4333-b963-0f21fdd2d3a5
+
+	measure 'Percentil 75 Colegio' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( COUNTROWS ( agg_operativo_colegio ) = 1, MAX ( agg_operativo_colegio[p75] ) ),
+			        dim_area_operativa[area] = AreaSel,
+			        agg_operativo_colegio[dimension] = "Total",
+			        REMOVEFILTERS ( agg_operativo_colegio[categoria] )
+			    )
+		formatString: #,0.0
+		displayFolder: 3. Distribución
+		lineageTag: 07764197-cfe6-4e6f-a717-241d4340f4d5
+
+	measure 'Percentil 90 Colegio' =
+			VAR AreaSel = [Area Mostrada]
+			RETURN
+			    CALCULATE (
+			        IF ( COUNTROWS ( agg_operativo_colegio ) = 1, MAX ( agg_operativo_colegio[p90] ) ),
+			        dim_area_operativa[area] = AreaSel,
+			        agg_operativo_colegio[dimension] = "Total",
+			        REMOVEFILTERS ( agg_operativo_colegio[categoria] )
+			    )
+		formatString: #,0.0
+		displayFolder: 3. Distribución
+		lineageTag: 473adc40-b053-423f-a93e-7bd228ae6f2b
+
+	/// Promedio distrital (Total, celdas no suprimidas, ponderado por n) para los años seleccionados y el área mostrada. Desde agg_benchmark_distrito: RLS no lo filtra y no usa ALL().
+	measure 'Promedio Distrito' =
+			VAR AreaSel = [Area Mostrada]
+			VAR Filas =
+			    CALCULATETABLE (
+			        FILTER ( agg_benchmark_distrito, agg_benchmark_distrito[dimension] = "Total" && NOT agg_benchmark_distrito[suprimido] ),
+			        dim_area_operativa[area] = AreaSel
+			    )
+			RETURN
+			    DIVIDE ( SUMX ( Filas, agg_benchmark_distrito[promedio] * agg_benchmark_distrito[n] ), SUMX ( Filas, agg_benchmark_distrito[n] ) )
+		formatString: #,0.0
+		displayFolder: 4. Distrito
+		lineageTag: ab55fec2-72a0-401a-951a-9cffa91fcc92
+
+	measure 'Brecha vs Distrito' = IF ( ISBLANK ( [Promedio Colegio] ) || ISBLANK ( [Promedio Distrito] ), BLANK (), [Promedio Colegio] - [Promedio Distrito] )
+		formatString: +#,0.0;-#,0.0;0.0
+		displayFolder: 4. Distrito
+		lineageTag: 58b9c207-f49b-49ed-aaf4-1d4fd2466301
+
+	/// Promedio distrital de la misma dimensión y categoría del contexto (p. ej. estrato 1). BLANK para 'grupo', que no tiene equivalente distrital.
+	measure 'Promedio Distrito Categoria' =
+			VAR AreaSel = [Area Mostrada]
+			VAR Dimensiones = VALUES ( agg_operativo_colegio[dimension] )
+			VAR Categorias = VALUES ( agg_operativo_colegio[categoria] )
+			VAR Filas =
+			    CALCULATETABLE (
+			        FILTER (
+			            agg_benchmark_distrito,
+			            agg_benchmark_distrito[dimension] IN Dimensiones
+			                && agg_benchmark_distrito[categoria] IN Categorias
+			                && NOT agg_benchmark_distrito[suprimido]
+			        ),
+			        dim_area_operativa[area] = AreaSel
+			    )
+			RETURN
+			    IF (
+			        HASONEVALUE ( agg_operativo_colegio[dimension] ),
+			        DIVIDE ( SUMX ( Filas, agg_benchmark_distrito[promedio] * agg_benchmark_distrito[n] ), SUMX ( Filas, agg_benchmark_distrito[n] ) )
+			    )
+		formatString: #,0.0
+		displayFolder: 4. Distrito
+		lineageTag: 1dfe2bdb-17cd-445a-a532-9b5d1854cafe
+
+	/// UPN con el que se evalúa el informe (para verificar RLS).
+	measure 'Usuario Actual' = USERPRINCIPALNAME ()
+		displayFolder: 5. Seguridad
+		lineageTag: 3508aee4-5e54-4159-99dd-267f05ca1f20
+
+	measure 'Colegios Visibles' = CONCATENATEX ( VALUES ( dim_colegio[nombre_colegio] ), dim_colegio[nombre_colegio], ", ", dim_colegio[nombre_colegio], ASC )
+		displayFolder: 5. Seguridad
+		lineageTag: e5dd81b4-cb44-4a57-afad-1ba399401487
+
+	/// Mensaje para usuarios sin colegio asignado (RLS-03).
+	measure 'Aviso Sin Colegio' = IF ( COUNTROWS ( dim_colegio ) = 0, "Usuario sin colegio asignado: " & USERPRINCIPALNAME (), "" )
+		displayFolder: 5. Seguridad
+		lineageTag: 94a66d6d-eec4-4404-a686-99c51d989ae4
+
+	/// Indica que las visuales de subgrupos requieren elegir una sola dimensión.
+	measure 'Instruccion Subgrupos' = IF ( NOT HASONEVALUE ( agg_operativo_colegio[dimension] ), "Seleccione una dimensión (sexo, estrato o grupo) para ver los subgrupos", "" )
+		displayFolder: 2. Subgrupos
+		lineageTag: a1772cf1-09aa-46bb-9761-03601c6afc34
+
+	column sin_uso
+		isHidden
+		lineageTag: e0bb81ac-37c4-4cc5-8be3-deb3a9d6474f
+		isNameInferred
+		sourceColumn: [sin_uso]
+
+	partition _Medidas = calculated
+		mode: import
+		source = ROW("sin_uso", BLANK())
+

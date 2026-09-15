@@ -1,0 +1,71 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "8b0c36a424ee47d52526",
+  "position": {
+    "x": 320,
+    "y": 210,
+    "z": 8000,
+    "height": 850,
+    "width": 900,
+    "tabOrder": 8000
+  },
+  "visual": {
+    "visualType": "clusteredColumnChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "agg_operativo_colegio"
+                    }
+                  },
+                  "Property": "categoria"
+                }
+              },
+              "queryRef": "agg_operativo_colegio.categoria",
+              "nativeQueryRef": "categoria",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Operativo"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Operativo",
+              "nativeQueryRef": "Promedio Operativo"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Distrito Categoria"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Distrito Categoria",
+              "nativeQueryRef": "Promedio Distrito Categoria"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

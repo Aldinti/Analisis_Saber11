@@ -1,0 +1,20 @@
+relationship operativo_colegio
+	fromColumn: agg_operativo_colegio.colegio_id
+	toColumn: dim_colegio.colegio_id
+
+relationship operativo_anio
+	fromColumn: agg_operativo_colegio.anio
+	toColumn: dim_anio.anio
+
+relationship operativo_area
+	fromColumn: agg_operativo_colegio.area
+	toColumn: dim_area_operativa.area
+
+relationship benchmark_anio
+	fromColumn: agg_benchmark_distrito.anio
+	toColumn: dim_anio.anio
+
+relationship benchmark_area
+	fromColumn: agg_benchmark_distrito.area
+	toColumn: dim_area_operativa.area
+

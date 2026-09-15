@@ -1,0 +1,71 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "2d9725f1a0f484613458",
+  "position": {
+    "x": 800,
+    "y": 260,
+    "z": 13000,
+    "height": 800,
+    "width": 1100,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "lineChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dim_anio"
+                    }
+                  },
+                  "Property": "anio"
+                }
+              },
+              "queryRef": "dim_anio.anio",
+              "nativeQueryRef": "anio",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Colegio"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Colegio",
+              "nativeQueryRef": "Promedio Colegio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Distrito"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Distrito",
+              "nativeQueryRef": "Promedio Distrito"
+            }
+          ]
+        }
+      }
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

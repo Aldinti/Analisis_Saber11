@@ -1,0 +1,97 @@
+/// Agregados por colegio × año × área × dimensión con supresión primaria y complementaria (plan §15.6). Sin filas de estudiante.
+table agg_operativo_colegio
+	lineageTag: 6e01a2d4-26b3-4ea1-8fc8-d328bc15eb1e
+
+	column colegio_id
+		dataType: int64
+		isHidden
+		lineageTag: 5b87e4e3-de88-43af-8011-feac1fad106f
+		sourceColumn: colegio_id
+
+	column anio
+		dataType: int64
+		isHidden
+		lineageTag: 18e34f60-76b2-4ea2-b147-545a1cc001fa
+		summarizeBy: none
+		sourceColumn: anio
+
+	column area
+		dataType: string
+		isHidden
+		lineageTag: a195a42a-e06b-4bc1-800e-3143204b451f
+		sourceColumn: area
+
+	column dimension
+		dataType: string
+		lineageTag: aee1a2e6-6183-4f80-bc4d-f970341a8d1f
+		sourceColumn: dimension
+
+	column categoria
+		dataType: string
+		lineageTag: 3de75c01-6c7c-4aea-b96a-fff816a4cf1a
+		sourceColumn: categoria
+
+	column n
+		dataType: int64
+		isHidden
+		lineageTag: 676b9443-644f-4213-b912-f132f29bf5ca
+		summarizeBy: none
+		sourceColumn: n
+
+	column promedio
+		dataType: double
+		isHidden
+		lineageTag: 7407cabf-bc9c-4c11-849c-effa5f90e497
+		summarizeBy: none
+		sourceColumn: promedio
+
+	column p10
+		dataType: double
+		isHidden
+		lineageTag: b49dbdd0-c309-4ece-8139-8deed18a70eb
+		summarizeBy: none
+		sourceColumn: p10
+
+	column p25
+		dataType: double
+		isHidden
+		lineageTag: ca93eb97-fddb-40d2-a166-91035adb8bdf
+		summarizeBy: none
+		sourceColumn: p25
+
+	column p50
+		dataType: double
+		isHidden
+		lineageTag: 85be919d-26b5-48c9-a476-878eab5c6c87
+		summarizeBy: none
+		sourceColumn: p50
+
+	column p75
+		dataType: double
+		isHidden
+		lineageTag: c7ae66ec-04b7-4f57-a5c0-2ba7b686b84d
+		summarizeBy: none
+		sourceColumn: p75
+
+	column p90
+		dataType: double
+		isHidden
+		lineageTag: 969f0cea-1c1d-408f-b0cc-17c0395419ed
+		summarizeBy: none
+		sourceColumn: p90
+
+	column suprimido
+		dataType: boolean
+		isHidden
+		lineageTag: 548925c5-7f3f-450c-99aa-80540c639dbb
+		sourceColumn: suprimido
+
+	partition agg_operativo_colegio = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\agg_operativo_colegio.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"colegio_id", Int64.Type}, {"anio", Int64.Type}, {"area", type text}, {"dimension", type text}, {"categoria", type text}, {"n", Int64.Type}, {"promedio", type number}, {"p10", type number}, {"p25", type number}, {"p50", type number}, {"p75", type number}, {"p90", type number}, {"suprimido", type logical}})
+				in
+				    Tipos
+

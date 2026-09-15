@@ -1,0 +1,14 @@
+/// Años disponibles (desde el benchmark distrital, que no filtra RLS).
+table dim_anio
+	lineageTag: 281d41e1-61ca-4cee-a71f-bc3fcfb63642
+
+	column anio
+		lineageTag: 2260916d-7cbf-4f21-8bd2-8499687ab92a
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [anio]
+
+	partition dim_anio = calculated
+		mode: import
+		source = DISTINCT ( SELECTCOLUMNS ( agg_benchmark_distrito, "anio", agg_benchmark_distrito[anio] ) )
+

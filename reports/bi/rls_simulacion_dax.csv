@@ -1,0 +1,6 @@
+[caso],[upn],[colegios_visibles],[filas_seguridad_visibles],[evaluados_2024_global],[promedio_colegio_2024],[promedio_distrito_2024],[filas_benchmark],[aviso]
+RLS-01,rector.abc@example.org,ABC,1,128,407.1796875,405.3585066970647,408,
+RLS-02,rector.rst@example.org,RST,1,190,402.30526315789473,405.3585066970647,408,
+RLS-03,no.registrado@example.org,,,,,405.3585066970647,408,Usuario sin colegio asignado
+RLS-04,rector.multi@example.org,"ABC, RST",2,318,404.2672955974843,405.3585066970647,408,
+RLS-05,rector.abc@example.org,ABC,1,128,407.1796875,405.3585066970647,408,

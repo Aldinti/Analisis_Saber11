@@ -1,0 +1,6 @@
+/// Dirección de Calidad: sin filtro de filas (usuarios pendientes de definición).
+role Rol_Direccion
+	modelPermission: read
+
+	annotation PBI_Id = 464109587e054dbe8361073471ee97be
+

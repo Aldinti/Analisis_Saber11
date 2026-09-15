@@ -1,0 +1,34 @@
+/// Colegios. Tabla filtrada por el rol Rol_Rector (RLS).
+table dim_colegio
+	lineageTag: 0811623e-4820-41f2-9680-c0d7dca04310
+
+	column colegio_id
+		dataType: int64
+		isHidden
+		lineageTag: 72f11154-34ec-45f9-8cc4-5cd4e726a0ec
+		sourceColumn: colegio_id
+
+	column nombre_colegio
+		dataType: string
+		lineageTag: 21bf13dd-258e-44f6-aceb-a2d941c77afa
+		sourceColumn: nombre_colegio
+
+	column naturaleza_colegio
+		dataType: string
+		lineageTag: a418f831-df78-4a10-ba20-cb786a9b1c2a
+		sourceColumn: naturaleza_colegio
+
+	column modelo_pedagogico
+		dataType: string
+		lineageTag: 88f09de7-e96c-4e3a-b13d-d26e815ce2c1
+		sourceColumn: modelo_pedagogico
+
+	partition dim_colegio = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\dim_colegio.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"colegio_id", Int64.Type}, {"nombre_colegio", type text}, {"naturaleza_colegio", type text}, {"modelo_pedagogico", type text}})
+				in
+				    Tipos
+

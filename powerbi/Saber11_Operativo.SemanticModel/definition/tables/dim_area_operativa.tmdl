@@ -1,0 +1,25 @@
+/// Áreas de los agregados (Global y las 5 áreas) con orden de presentación.
+table dim_area_operativa
+	lineageTag: 65eb58d1-08bf-4679-af3d-54c5e2cf6d22
+
+	column area
+		lineageTag: 0632658c-8874-4f6c-be8b-94e897628707
+		isNameInferred
+		sourceColumn: [area]
+		sortByColumn: orden
+
+	column orden
+		isHidden
+		lineageTag: 03b96692-4bd0-4eb6-96fd-3036f61b2c9c
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [orden]
+
+	partition dim_area_operativa = calculated
+		mode: import
+		source =
+				ADDCOLUMNS (
+				    DISTINCT ( SELECTCOLUMNS ( agg_benchmark_distrito, "area", agg_benchmark_distrito[area] ) ),
+				    "orden", SWITCH ( [area], "Global", 0, "Lectura Crítica", 1, "Matemáticas", 2, "Sociales y Ciudadana", 3, "Ciencias Naturales", 4, "Inglés", 5, 9 )
+				)
+

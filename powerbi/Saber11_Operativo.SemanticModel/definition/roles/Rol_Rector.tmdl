@@ -1,0 +1,15 @@
+/// Rector: solo ve los colegios asignados a su UPN en seguridad_rectores (plan §15.3).
+role Rol_Rector
+	modelPermission: read
+
+	tablePermission dim_colegio =
+			dim_colegio[colegio_id]
+			    IN CALCULATETABLE (
+			        VALUES ( seguridad_rectores[colegio_id] ),
+			        seguridad_rectores[email_rector] = USERPRINCIPALNAME ()
+			    )
+
+	tablePermission seguridad_rectores = seguridad_rectores[email_rector] = USERPRINCIPALNAME ()
+
+	annotation PBI_Id = 596226cd19274898934d5dac5da8433c
+

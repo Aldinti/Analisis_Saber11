@@ -1,0 +1,24 @@
+/// Correo del rector → colegio autorizado. Sin relaciones; la usa el rol Rol_Rector. Oculta.
+table seguridad_rectores
+	isHidden
+	lineageTag: deed5bbb-ad1f-4003-ab8e-2d4e15fce49e
+
+	column email_rector
+		dataType: string
+		lineageTag: ee1c3fd6-de1d-468f-a9b1-45d96846bbde
+		sourceColumn: email_rector
+
+	column colegio_id
+		dataType: int64
+		lineageTag: 804c2d0e-5a7f-4b0a-a1a2-64e12e6244c4
+		sourceColumn: colegio_id
+
+	partition seguridad_rectores = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\seguridad_rectores.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"email_rector", type text}, {"colegio_id", Int64.Type}})
+				in
+				    Tipos
+

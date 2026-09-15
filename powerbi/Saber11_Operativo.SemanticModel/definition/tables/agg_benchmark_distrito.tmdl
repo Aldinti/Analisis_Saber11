@@ -1,0 +1,84 @@
+/// Benchmark distrital con supresión; sin relación con dim_colegio, por lo que RLS no lo filtra.
+table agg_benchmark_distrito
+	lineageTag: 3868bab2-e1d4-43b4-b320-d6cbb97dc089
+
+	column anio
+		dataType: int64
+		isHidden
+		lineageTag: f79a4d0e-1fee-4f8f-9235-87d416874489
+		summarizeBy: none
+		sourceColumn: anio
+
+	column area
+		dataType: string
+		isHidden
+		lineageTag: 1aa5e141-47cd-4296-ae55-da8fd0b54d7b
+		sourceColumn: area
+
+	column dimension
+		dataType: string
+		lineageTag: c938bdd1-49d7-4c3d-a7ad-d9530c2c1a96
+		sourceColumn: dimension
+
+	column categoria
+		dataType: string
+		lineageTag: b9acc2e5-043d-4e45-877d-18b57de27151
+		sourceColumn: categoria
+
+	column n
+		dataType: int64
+		isHidden
+		lineageTag: 10bc3880-6d88-44c5-9197-fe60c41ac6ca
+		summarizeBy: none
+		sourceColumn: n
+
+	column n_colegios
+		dataType: int64
+		isHidden
+		lineageTag: 629365e2-f41f-46a3-965d-66e04a255ab5
+		summarizeBy: none
+		sourceColumn: n_colegios
+
+	column promedio
+		dataType: double
+		isHidden
+		lineageTag: b5bee39e-20ac-4455-9a14-02f94f981d41
+		summarizeBy: none
+		sourceColumn: promedio
+
+	column p25
+		dataType: double
+		isHidden
+		lineageTag: 237da9bf-3096-4dcd-9fa7-ada4b92d4581
+		summarizeBy: none
+		sourceColumn: p25
+
+	column p50
+		dataType: double
+		isHidden
+		lineageTag: 4bb4a148-36eb-465e-8aab-d9433c2f6c20
+		summarizeBy: none
+		sourceColumn: p50
+
+	column p75
+		dataType: double
+		isHidden
+		lineageTag: 70e700f0-22cf-464a-9f2b-31b889a90bb6
+		summarizeBy: none
+		sourceColumn: p75
+
+	column suprimido
+		dataType: boolean
+		isHidden
+		lineageTag: 5c954643-d8f2-4df7-b82a-d07947de0677
+		sourceColumn: suprimido
+
+	partition agg_benchmark_distrito = m
+		mode: import
+		source =
+				let
+				    Origen = Parquet.Document(File.Contents(RutaGold & "\agg_benchmark_distrito.parquet")),
+				    Tipos = Table.TransformColumnTypes(Origen, {{"anio", Int64.Type}, {"area", type text}, {"dimension", type text}, {"categoria", type text}, {"n", Int64.Type}, {"n_colegios", Int64.Type}, {"promedio", type number}, {"p25", type number}, {"p50", type number}, {"p75", type number}, {"suprimido", type logical}})
+				in
+				    Tipos
+

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.12.0/schema.json",
+  "name": "4b442edb6877b31affa9",
+  "position": {
+    "x": 1240,
+    "y": 210,
+    "z": 9000,
+    "height": 850,
+    "width": 660,
+    "tabOrder": 9000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "agg_operativo_colegio"
+                    }
+                  },
+                  "Property": "categoria"
+                }
+              },
+              "queryRef": "agg_operativo_colegio.categoria",
+              "nativeQueryRef": "categoria"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Evaluados Visible"
+                }
+              },
+              "queryRef": "_Medidas.Evaluados Visible",
+              "nativeQueryRef": "Evaluados Visible"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Operativo"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Operativo",
+              "nativeQueryRef": "Promedio Operativo"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Promedio Distrito Categoria"
+                }
+              },
+              "queryRef": "_Medidas.Promedio Distrito Categoria",
+              "nativeQueryRef": "Promedio Distrito Categoria"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Etiqueta Supresion"
+                }
+              },
+              "queryRef": "_Medidas.Etiqueta Supresion",
+              "nativeQueryRef": "Etiqueta Supresion"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

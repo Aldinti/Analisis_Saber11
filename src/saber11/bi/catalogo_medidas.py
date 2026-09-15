@@ -1,7 +1,8 @@
 """Genera docs/bi/medidas_dax.md a partir del modelo semántico guardado como PBIP (TMDL).
 
 Uso (desde la raíz, con PYTHONPATH=src):
-    python -m saber11.bi.catalogo_medidas
+    python -m saber11.bi.catalogo_medidas                       # dashboard estratégico
+    python -m saber11.bi.catalogo_medidas --tablero operativo   # dashboard operativo (F7)
 """
 from __future__ import annotations
 
@@ -14,6 +15,11 @@ from saber11.config import PROJECT_ROOT
 
 MODELO = PROJECT_ROOT / "powerbi" / "Saber11_Estrategico.SemanticModel" / "definition"
 DESTINO = PROJECT_ROOT / "docs" / "bi" / "medidas_dax.md"
+TABLEROS = {
+    "estrategico": ("Dashboard estratégico", MODELO, DESTINO),
+    "operativo": ("Dashboard operativo", PROJECT_ROOT / "powerbi" / "Saber11_Operativo.SemanticModel" / "definition",
+                  PROJECT_ROOT / "docs" / "bi" / "medidas_dax_operativo.md"),
+}
 PATRON_MEDIDA = re.compile(r"^\tmeasure (?P<nombre>'[^']+'|\S+) =(?P<resto>.*)$")
 PROPIEDADES = ("formatString", "displayFolder", "lineageTag", "isHidden", "dataType", "annotation")
 
@@ -65,15 +71,17 @@ def leer_medidas(archivo: Path) -> list[Medida]:
     return medidas
 
 
-def generar(modelo: Path = MODELO) -> str:
+def generar(modelo: Path = MODELO, titulo: str = "Dashboard estratégico") -> str:
     medidas = [m for archivo in sorted((modelo / "tables").glob("*.tmdl")) for m in leer_medidas(archivo)]
     medidas.sort(key=lambda m: (m.carpeta, m.nombre))
     salida = [
-        "# Catálogo de medidas DAX — Dashboard estratégico", "",
-        "> Generado desde `powerbi/Saber11_Estrategico.SemanticModel` con `python -m saber11.bi.catalogo_medidas`. "
+        f"# Catálogo de medidas DAX — {titulo}", "",
+        f"> Generado desde `{modelo.parent.relative_to(PROJECT_ROOT).as_posix()}` con `python -m saber11.bi.catalogo_medidas`. "
         "No editar a mano: modificar la medida en el modelo y regenerar.", "",
-        "Validación numérica contra SQL: [`reports/bi/validacion_kpis_estrategico.md`](../../reports/bi/validacion_kpis_estrategico.md) "
-        "(consultas de control en `tests/bi/kpi_control.sql`).", "",
+        ("Validación numérica contra SQL: [`reports/bi/validacion_kpis_estrategico.md`](../../reports/bi/validacion_kpis_estrategico.md) "
+         "(consultas de control en `tests/bi/kpi_control.sql`)." if "Operativo" not in modelo.parent.name else
+         "Validación numérica contra SQL: [`reports/bi/validacion_kpis_operativo.md`](../../reports/bi/validacion_kpis_operativo.md); "
+         "casos RLS: [`tests/rls/casos_rls.md`](../../tests/rls/casos_rls.md)."), "",
         "| Carpeta | Medida | Formato | Descripción |", "|---|---|---|---|",
     ]
     salida += [f"| {m.carpeta} | `{m.nombre}` | `{m.formato}` | {m.descripcion} |" for m in medidas]
@@ -91,9 +99,11 @@ def generar(modelo: Path = MODELO) -> str:
 
 
 def main() -> int:
-    DESTINO.parent.mkdir(parents=True, exist_ok=True)
-    DESTINO.write_text(generar(), encoding="utf-8")
-    print(f"Catálogo escrito en {DESTINO.relative_to(PROJECT_ROOT)}")
+    tablero = sys.argv[sys.argv.index("--tablero") + 1] if "--tablero" in sys.argv else "estrategico"
+    titulo, modelo, destino = TABLEROS[tablero]
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    destino.write_text(generar(modelo, titulo), encoding="utf-8")
+    print(f"Catálogo escrito en {destino.relative_to(PROJECT_ROOT)}")
     return 0
 
 

@@ -15,3 +15,5 @@ rector.hij@example.org,HIJ
 rector.vwx@example.org,VWX
 rector.klm@example.org,KLM
 rector.nop@example.org,NOP
+rector.multi@example.org,ABC
+rector.multi@example.org,RST

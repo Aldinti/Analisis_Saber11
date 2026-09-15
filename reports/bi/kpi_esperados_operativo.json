@@ -1,0 +1,67 @@
+[
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Evaluados Colegio",
+    "valor": 128.0
+  },
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Promedio Colegio",
+    "valor": 407.1796875
+  },
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Mediana Colegio",
+    "valor": 404.5
+  },
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Percentil 90 Colegio",
+    "valor": 469.5
+  },
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Promedio Distrito",
+    "valor": 405.3585066970647
+  },
+  {
+    "escenario": "ABC 2024 · Global",
+    "kpi": "Brecha vs Distrito",
+    "valor": 1.8211808029353165
+  },
+  {
+    "escenario": "ABC 2021-2024 · Global",
+    "kpi": "Promedio Colegio",
+    "valor": 398.00110619469024
+  },
+  {
+    "escenario": "ABC 2021-2024 · Global",
+    "kpi": "Evaluados Colegio",
+    "valor": 904.0
+  },
+  {
+    "escenario": "ABC 2024 · Matemáticas · estrato 1",
+    "kpi": "Promedio Operativo",
+    "valor": 80.28571428571429
+  },
+  {
+    "escenario": "ABC 2024 · Matemáticas · estrato 1",
+    "kpi": "Evaluados Visible",
+    "valor": 28.0
+  },
+  {
+    "escenario": "ABC 2024 · Matemáticas · estrato 1",
+    "kpi": "Promedio Distrito Categoria",
+    "valor": 76.27307692307693
+  },
+  {
+    "escenario": "ABC 2024 · Global · sexo Femenino",
+    "kpi": "Promedio Operativo",
+    "valor": 406.09375
+  },
+  {
+    "escenario": "ABC 2024 · Global · grupo 11-2",
+    "kpi": "Promedio Operativo",
+    "valor": 407.4901960784314
+  }
+]

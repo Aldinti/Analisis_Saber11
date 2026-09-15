@@ -733,12 +733,22 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 | Objetivo | Vista por colegio restringida a su rector |
 | Actividades | Tabla de seguridad; rol `Rol_Rector`; página colegio construida sobre `agg_operativo_colegio` (**agregación y supresión de grupos pequeños**, §15.6); distribución por percentiles; niveles de desempeño; comparativo distrital desde `agg_benchmark_distrito`; deshabilitar exportación de datos subyacentes; matriz de casos de prueba; evidencias "Ver como rol" |
 | Entrada | Gold + `config/seguridad_rectores.csv` (*contenido real Pendiente de definición*; para pruebas usar cuentas ficticias con dominio `example.org`, marcadas como ficticias) |
-| Herramientas | Power BI Desktop |
-| Salida / Entregable | `powerbi/Saber11_Operativo.pbix`, `tests/rls/casos_rls.md` con capturas |
-| Dependencias | F4, F6 (modelo semántico) |
+| Herramientas | Power BI Desktop 2.157, MCP de modelado de Power BI (modelo y roles en vivo), DAX, DuckDB (KPIs de control) |
+| Salida / Entregable | `powerbi/Saber11_Operativo.pbip` (modelo propio solo con agregados, roles `Rol_Rector`/`Rol_Direccion`, 3 páginas PBIR), `tests/rls/casos_rls.md`, `docs/bi/medidas_dax_operativo.md`, `reports/bi/validacion_kpis_operativo.md`, evidencias DAX `reports/bi/rls_simulacion_dax.csv` y `reports/bi/supresion_dax_fixture.csv`, ADR-0018 |
+| Dependencias | F4, F6 (formato PBIR y lecciones; el modelo semántico es propio, ADR-0018) |
 | Criterio de aceptación | 100 % de casos RLS superados (§15.4), incluidos RLS-09..11 de supresión; ninguna visual operativa muestra métricas de grupos con n < `k_min` |
 | Riesgos | RLS no protege el `.pbix` distribuido; `ALL()` no ignora RLS |
 | Mitigación | Ver §15.3 y §15.5 |
+
+**Implementación y lecciones F7 (cerrada; casos RLS aprobados por el SUP con "Ver como"):**
+- **Modelo propio solo con agregados (ADR-0018):** en lugar de reutilizar el modelo de F6 (con filas por evaluación), el operativo importa `dim_colegio`, `agg_operativo_colegio`, `agg_benchmark_distrito` y `seguridad_rectores` (oculta, sin relaciones), más las calculadas `dim_anio` y `dim_area_operativa`. Motivo: con permiso *Build* o "Analizar en Excel" un Viewer consulta cualquier tabla del modelo; ocultar `fact_resultado` no basta para cumplir §15.6.
+- **RLS:** `Rol_Rector` con el filtro de §15.3 sobre `dim_colegio` y `seguridad_rectores`; `Rol_Direccion` sin filtro. Cuenta ficticia `rector.multi@example.org` (ABC, RST) añadida al ejemplo de seguridad para RLS-04.
+- **Medidas (23):** salvaguardas en `Promedio Celda` (una dimensión, un área, n ≥ `K Min`, sin celdas suprimidas); `Area Mostrada` aplica Global si no hay un área única; percentiles solo para una celda; `Promedio Distrito` y `Promedio Distrito Categoria` desde el benchmark, ponderados por n y sin `ALL()`; `K Min` sincronizado con `settings.yaml` por prueba.
+- **Validación:** 13/13 KPIs = SQL calculado desde los hechos (no desde los agregados); RLS-01..08 pre-validados en DAX y aprobados con "Ver como"; RLS-09/10 validados apuntando temporalmente `RutaGold` a un Gold de fixture con grupos de 4 y 5 estudiantes; RLS-11: el modelo no tiene filas de estudiante y el informe exporta solo datos resumidos.
+- **Lección — impersonación:** el MCP no puede conectarse con `Roles=Rol_Rector` (usa la API de metadatos, que un rol de solo lectura no ve). La lógica del rol se pre-valida evaluando en DAX la misma expresión con el UPN literal (`FUNCTION` en `DEFINE`); la prueba con el rol real la hace el SUP.
+- **Fallo encontrado y corregido — CSV de seguridad:** al añadir líneas al ejemplo quedaron finales de línea mezclados (CRLF + LF) y Gold falló: la detección de dialecto de DuckDB 1.5.5 no lee ese archivo ni con `delim`/`quote` explícitos. `gold._cargar_seguridad` ahora usa el módulo `csv` de Python (`utf-8-sig`, admite BOM de Excel) y valida la cabecera; pruebas de regresión en `tests/integration/test_gold.py`. Cualquier CSV editado a mano en Windows podía provocarlo.
+- **Reutilización:** el constructor PBIR quedó en `src/saber11/bi/pbir.py` (compartido por `scripts/generar_reporte_estrategico.py` y `scripts/generar_reporte_operativo.py`); `kpi_control` y `catalogo_medidas` aceptan `--tablero operativo`.
+- **Pendiente (ADR-0015):** publicar en Power BI Service con la prueba de 60 días y repetir RLS-01..05 con cuentas reales de prueba como *Viewer*; definir los usuarios reales de `seguridad_rectores` y de `Rol_Direccion`.
 
 ### F8 — Machine Learning
 | Campo | Contenido |
@@ -915,7 +925,7 @@ Analisis_Saber11/
 │   ├── unit/  data/  integration/  rls/casos_rls.md  fixtures/mini_icfes.csv (sintético)
 ├── models/                      # artefactos por run_id (no versionar binarios grandes)
 ├── reports/{profiling, quality, ml, shap, fairness}/
-├── powerbi/                     # .pbix/.pbip (no versionar si incluye datos)
+├── powerbi/                     # Saber11_Estrategico.pbip y Saber11_Operativo.pbip (TMDL + PBIR, sin caché de datos)
 ├── scripts/
 │   └── generar_datos_ficticios.py   # F1b: amplía el CSV de ejemplo con datos ficticios
 ├── Objetivos.md  PROMPT.md
@@ -1016,6 +1026,8 @@ Percentil 75 Colegio = PERCENTILEX.INC ( fact_resultado, fact_resultado[puntaje_
 - **Rol_Direccion** (sin filtro) para la Dirección de Calidad — *usuarios Pendiente de definición*.
 
 ### 15.4 Casos de prueba RLS (Desktop → Modelado → Ver como → "Otro usuario" + rol)
+> Ejecutados en F7: matriz con esperado, pre-validación DAX y resultado del SUP en `tests/rls/casos_rls.md` (todos aprobados).
+
 | Caso | Identidad simulada | Esperado |
 |---|---|---|
 | RLS-01 | UPN ficticio asignado a ABC | Solo filas ABC; `Evaluados` = conteo SQL de ABC |
@@ -1274,8 +1286,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E12 | Linaje | F4 | MD/Mermaid | CSV→Gold | Cada columna Gold trazada |
 | E13 | Dashboard estratégico | F6 | PBIP (TMDL + PBIR) | 5 páginas, 53 visuales, rótulo de datos ficticios | 21/21 KPIs = SQL; revisión visual del SUP aprobada |
 | E14 | Catálogo DAX | F6–F7 | MD | Medidas (generado desde TMDL) | Descritas, validadas y sincronizadas por prueba |
-| E15 | Dashboard operativo + RLS | F7 | PBIX/PBIP | Roles + agregación/supresión de grupos pequeños | RLS-01..11 PASS |
-| E16 | Matriz de pruebas RLS | F7 | MD + PNG | Evidencias | 100 % |
+| E15 | Dashboard operativo + RLS | F7 | PBIP (TMDL + PBIR) | Modelo solo con agregados, roles `Rol_Rector`/`Rol_Direccion`, 3 páginas | RLS-01..11 PASS; 13/13 KPIs = SQL |
+| E16 | Matriz de pruebas RLS | F7 | MD + CSV (evidencias DAX) | Esperado, pre-validación DAX y resultado "Ver como" | 100 % aprobado |
 | E17 | Modelos entrenados | F8 | joblib/JSON | Baseline, Ridge, Lasso, XGB | Métricas registradas |
 | E18 | Informe comparación de modelos | F8 | MD | Tabla + IC | Regla de selección aplicada |
 | E19 | Gráficos y valores SHAP | F9 | PNG/Parquet | Global/local | Aditividad verificada |
@@ -1314,6 +1326,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | R16 | Datos ficticios tomados como evidencia real | Media | Alto | Alto | Rótulo "Datos ficticios" en dashboards e informes; S7 | Retirar informes difundidos |
 | R17 | Agente no puede operar GUI de Power BI Desktop | Media (materializado en F6) | Medio | Medio | Modelo en vivo por MCP (app como administrador); informe PBIR generado a partir de visuales de muestra del SUP; campos validados contra TMDL | Tareas GUI y revisión visual asignadas al SUP |
 | R18 | Formato PBIR incompatible con la versión de Desktop (visual no representa o informe no abre) | Media (materializado en F6: tablas con `active`) | Medio | Medio | Copiar formato de visuales reales de la versión en uso; no escribir propiedades no observadas; pruebas de regresión | Respaldo del informe formateado; corregir el JSON y reabrir |
+| R19 | CSV de seguridad editado a mano ilegible (finales de línea mezclados, BOM) | Media (materializado en F7) | Alto | Alto | Carga con `csv` de Python y validación de cabecera y correos | Gold no se publica y conserva la versión anterior |
 | R08 | RLS no efectivo en Desktop | Mitigado | Alto | Bajo | Publicación en Power BI Service/Fabric (Trial 60 días) con rol Viewer | Si vence el trial, limitar distribución de .pbix |
 | R09 | Incompatibilidades Power BI (particiones hive, rutas absolutas) | Media | Medio | Medio | Spike F4; parámetro de ruta | Tablas Gold sin partición para BI |
 | R10 | Reproducibilidad | Media | Alto | Alto | Lock, semillas, run_log | Reconstruir desde Bronze raw |
@@ -1335,6 +1348,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | 004 | Modelo | Tabla plana, estrella, copo | **Estrella** + junk dim + agregado benchmark | Requisito O2; DAX simple | Rendimiento, claridad | Más tablas | BI |
 | 005 | Columnas de partición en BI | Derivar de ruta, duplicar en archivo, BI lee tablas sin partición | **Duplicar en archivo (`WRITE_PARTITION_COLUMNS true`)** — `docs/adr/0005-columnas-particion-power-bi.md` | Spike F4: DuckDB no las escribe por defecto | Power BI no parsea rutas; hive sigue funcionando | Dos columnas redundantes | F4, F6 |
 | 017 | Claves sustitutas | `row_number()` por clave natural, hash MD5 | **MD5 estable** — `docs/adr/0017-claves-sustitutas-estables.md` | `row_number()` cambia claves al agregar colegios | Estables para RLS y cargas nuevas | Colisión teórica (verificada) | F4, F6, F7 |
+| 018 | Modelo del dashboard operativo | Reutilizar modelo F6 ocultando hechos, modelo propio solo con agregados | **Modelo propio solo con agregados** — `docs/adr/0018-modelo-operativo-solo-agregados.md` | Un Viewer con Build/Analizar en Excel accede a tablas ocultas | Imposible llegar a microdatos | Dos modelos que mantener | F7, despliegue |
 | 006 | RLS | Relación bidireccional (Objetivos), tabla desconectada + `IN`, roles estáticos por colegio | **Tabla desconectada + filtro en dim_colegio** | Evita bidireccional; dinámico | Un rol para todos | DAX algo más complejo | F7 |
 | 007 | Benchmark distrital bajo RLS | `ALL()` (Objetivos), tabla agregada | **Tabla agregada no filtrada** | `ALL()` no puede quitar filtros RLS | Correcto bajo RLS | Riesgo divulgación (R15) | F7 |
 | 008 | Ridge vs XGBoost | Solo uno | **Ambos + baseline**, regla de parsimonia | Requisito O4; comparación honesta | Interpretabilidad + no linealidad | Más cómputo (irrelevante aquí) | F8 |
@@ -1385,7 +1399,7 @@ pytest -q
 - [ ] 100 % reglas DQ bloqueantes PASS; informe archivado
 - [ ] Silver/Gold/Power BI sin PII (test DQ-PRI-001)
 - [x] KPIs del dashboard estratégico validados contra SQL (F6, 21/21)
-- [ ] RLS-01..11 PASS con evidencias; limitación Desktop comunicada
+- [x] RLS-01..11 PASS con evidencias (F7, `tests/rls/casos_rls.md`); limitación Desktop comunicada
 - [ ] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003, `k_min` documentado)
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer
 - [ ] Modelos comparados vs baseline; tests anti-leakage verdes

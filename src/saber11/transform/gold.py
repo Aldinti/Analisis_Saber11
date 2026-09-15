@@ -13,6 +13,7 @@ aceptación del plan y las reglas DQ de la capa Gold; si algo falla, Gold vigent
 """
 from __future__ import annotations
 
+import csv
 import os
 import re
 import shutil
@@ -70,17 +71,26 @@ def fuente_seguridad(settings: dict[str, Any], raiz: Path) -> Path:
 
 
 def _cargar_seguridad(con: duckdb.DuckDBPyConnection, ruta: Path) -> None:
+    """Carga el CSV de seguridad con el módulo csv de Python.
+
+    Se evita el detector de dialecto de DuckDB: un CSV editado a mano en Windows puede mezclar finales de
+    línea CRLF y LF (o traer BOM de Excel), y DuckDB 1.5 no logra leerlo ni con opciones explícitas.
+    """
     if not ruta.exists():
         raise FileNotFoundError(f"No existe el archivo de seguridad {ruta}")
-    con.execute(f"""
-        CREATE OR REPLACE TABLE seguridad_fuente AS
-        SELECT email_rector, nombre_colegio
-        FROM read_csv({_lit(ruta)}, header = true, all_varchar = true)
-    """)
-    invalidos = [e for (e,) in con.execute("SELECT email_rector FROM seguridad_fuente").fetchall()
-                 if not e or not PATRON_EMAIL.match(e.strip())]
+    with ruta.open(encoding="utf-8-sig", newline="") as f:
+        lector = csv.DictReader(f)
+        faltantes = {"email_rector", "nombre_colegio"} - set(lector.fieldnames or [])
+        if faltantes:
+            raise VerificacionGoldError(f"{ruta.name} no tiene las columnas {sorted(faltantes)}")
+        filas = [((r["email_rector"] or "").strip(), (r["nombre_colegio"] or "").strip())
+                 for r in lector if any((v or "").strip() for v in r.values())]
+    invalidos = [e for e, _ in filas if not e or not PATRON_EMAIL.match(e)]
     if invalidos:
         raise VerificacionGoldError(f"{len(invalidos)} correos inválidos en {ruta.name}")
+    con.execute("CREATE OR REPLACE TABLE seguridad_fuente (email_rector VARCHAR, nombre_colegio VARCHAR)")
+    if filas:
+        con.executemany("INSERT INTO seguridad_fuente VALUES (?, ?)", filas)
 
 
 def construir_tablas(con: duckdb.DuckDBPyConnection, parquet_silver: Path, ruta_seguridad: Path,

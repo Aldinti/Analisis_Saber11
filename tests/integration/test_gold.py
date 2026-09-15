@@ -152,6 +152,23 @@ def test_seguridad_con_colegio_inexistente_no_publica_y_conserva_gold(proyecto):
     assert not [p for p in gold(proyecto).parent.iterdir() if p.name.startswith(".gold_")]
 
 
+def test_seguridad_con_finales_de_linea_mezclados_y_bom(proyecto):
+    # Regresión F7: un CSV editado a mano (CRLF + LF, BOM de Excel) hacía fallar la detección de dialecto de DuckDB.
+    ruta = proyecto / "seguridad_mixta.csv"
+    contenido = "\ufeffemail_rector,nombre_colegio\r\nrector.xyz@example.org,XYZ\nrector.otro@example.org, XYZ \n\n"
+    ruta.write_bytes(contenido.encode("utf-8"))
+    assert ejecutar_gold(SETTINGS, CONTRATO, proyecto, ruta) == 0
+    seguridad_final = leer(proyecto, "seguridad_rectores")
+    assert sorted(seguridad_final["email_rector"]) == ["rector.otro@example.org", "rector.xyz@example.org"]
+    assert seguridad_final["colegio_id"].notna().all()
+
+
+def test_seguridad_sin_columnas_requeridas_no_publica(proyecto):
+    ruta = proyecto / "seguridad_mala.csv"
+    ruta.write_text("correo,colegio\nrector.xyz@example.org,XYZ\n", encoding="utf-8")
+    assert ejecutar_gold(SETTINGS, CONTRATO, proyecto, ruta) == 1
+
+
 def test_correo_invalido_en_seguridad_no_publica(proyecto):
     assert ejecutar_gold(SETTINGS, CONTRATO, proyecto, seguridad(proyecto, "no-es-correo,XYZ\n")) == 1
 

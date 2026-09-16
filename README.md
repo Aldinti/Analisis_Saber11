@@ -35,11 +35,11 @@ Analisis_Saber11/
 │   ├── PLAN_MAESTRO.md
 │   ├── operacion.md             # manual de operación del pipeline
 │   ├── pruebas.md               # qué cubre la suite y qué queda manual
+│   ├── seguridad.md             # checklist de privacidad y seguridad (F13)
 │   ├── ml/variables_modelo.md   # catálogo de predictoras y exclusiones (generado por --stage ml)
 │   ├── data_classification.md
 │   └── adr/                 # Decisiones arquitectónicas registradas
 ├── models/                  # Artefactos y métricas por run_id (no versionado: se regenera con --stage ml)
-├── notebooks/               # Cuadernos de perfilamiento y análisis exploratorio
 ├── powerbi/                 # Saber11_Estrategico.pbip y Saber11_Operativo.pbip (RLS): TMDL + PBIR, sin datos
 ├── reports/                 # Informes generados (calidad, perfilamiento, shap, sesgos)
 ├── scripts/                 # Scripts auxiliares (ej. generación ortogonal F1b)

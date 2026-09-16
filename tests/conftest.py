@@ -58,7 +58,7 @@ def marco_ml() -> Callable[..., pd.DataFrame]:
 def settings_ml_dict() -> dict:
     """Configuración mínima de F8/F9 para un proyecto temporal (una copia nueva cada vez)."""
     return {
-        "paths": {"gold": "data/gold", "models": "models", "reports": "reports"},
+        "paths": {"gold": "data/gold", "models": "models", "reports": "reports", "tmp": "data/_tmp"},
         "ml": {
             "target": "puntaje_global",
             "cv_group_col": "nombre_colegio",

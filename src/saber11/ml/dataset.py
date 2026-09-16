@@ -79,6 +79,11 @@ def cargar(settings: dict[str, Any], raiz: Path) -> pd.DataFrame:
         )
     con = duckdb.connect()
     try:
+        # Los temporales de DuckDB quedan dentro del proyecto, no en el temp del sistema
+        # (§21.5): están excluidos de git y se limpian con `tasks.ps1 clean-tmp`.
+        tmp = raiz / settings["paths"]["tmp"]
+        tmp.mkdir(parents=True, exist_ok=True)
+        con.execute("SET temp_directory = ?", [str(tmp)])
         return con.execute(
             "SELECT * FROM read_parquet(?) ORDER BY resultado_id", [str(ruta)]
         ).df()

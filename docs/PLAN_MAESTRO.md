@@ -195,7 +195,7 @@ flowchart TD
 | Objetivo | Conocer estructura, calidad y sensibilidad antes de diseñar reglas |
 | Actividades | Estructura/encoding; tipos; nulos; duplicados (fila, `nroDoc`, `nroDoc+anio`); cardinalidad y **columnas constantes**; rangos y atípicos (IQR, z-score); verificación de la fórmula del Global; dependencias funcionales (colegio→modelo pedagógico/naturaleza/zona); distribución por año/colegio/sexo/estrato; identificación de PII |
 | Entrada | CSV |
-| Proceso | `notebooks/01_perfilamiento.ipynb` + `src/saber11/profiling/profile.py` que produce JSON reutilizable |
+| Proceso | `src/saber11/profiling/profile.py`, que produce Markdown y JSON reutilizables (se resolvió sin cuadernos: nada que limpiar antes de versionar, §21.11) |
 | Herramientas | DuckDB (`SUMMARIZE`), pandas, matplotlib |
 | Salida / Entregable | `reports/profiling/perfilamiento_v1.md` + `profile_<sha>.json` |
 | Dependencias | F0 |
@@ -848,6 +848,15 @@ Detalle en §22. **Dependencias:** transversal; consolidación tras F11. **Acept
 ### F13 — Seguridad
 Detalle en §21. **Dependencias:** transversal; revisión final tras F11. **Aceptación:** checklist de seguridad completo; escaneo de repo sin PII ni secretos (`git grep -n "nroDoc\|Nombre"` sobre artefactos distribuibles, `detect-secrets` opcional).
 
+**Revisión y resultados F13 (cerrada):** checklist completo en `docs/seguridad.md` — 9 de 12 medidas verificadas, 3 pendientes de decisión del responsable del dato.
+- **El escaneo es una prueba, no una revisión manual:** `tests/unit/test_repo_seguro.py` (10 controles) comprueba sobre `git ls-files` que no se versionan datos ni binarios de modelo, que no hay `.env` ni rutas de `data/`/`models/`, que el `.gitignore` cubre lo sensible, que la plantilla de entorno no trae la clave rellenada y que **la clave HMAC local no aparece en ningún archivo versionado**. Junto con los 15 controles de `tests/data/test_no_pii.py`, el criterio de F13 queda re-ejecutable con `pytest`.
+- **Resultado del escaneo:** sin archivos de datos ni secretos versionados; las 5 cadenas de 64 hexadecimales que aparecen son SHA-256 de archivos, no claves; los 9 CSV versionados son configuración, evidencia o fixture.
+- **Caso deliberado documentado:** `tests/fixtures/mini_icfes.csv` sí lleva nombres y `nroDoc` porque es el fixture que ejercita la eliminación de PII; una prueba verifica que sus identidades son las que genera F1b, para que nadie lo regenere desde datos auténticos sin que la suite se ponga roja.
+- **Zona restringida:** la copia original de Bronze es de solo lectura (verificado y ahora probado). La carpeta hereda la ACL del proyecto, sin acceso para «Usuarios»; el endurecimiento explícito y el cifrado de disco quedan como acción del administrador, con el comando exacto en `docs/seguridad.md`.
+- **Corrección aplicada:** la carga del conjunto de ML no fijaba `temp_directory` y podía derramar temporales al directorio del sistema; ahora usa `data/_tmp` como el resto de las capas (§21.5).
+- **Pendientes que no puede cerrar el proyecto** (ninguno bloquea el uso con datos ficticios; todos deben cerrarse antes de cargar datos reales): endurecer la ACL de Bronze, custodia y respaldo de la clave HMAC, política de retención, revisión jurídica y definición de los usuarios reales de RLS.
+- **Límites declarados:** la seudonimización no es anonimato; la supresión (`k_min` = 5) mitiga la reidentificación por cuasi-identificadores pero no la elimina; un `.pbix` distribuido no está protegido por RLS.
+
 ### F14 — Documentación y entrega
 Detalle en §24 y §28. **Dependencias:** F0–F13. **Aceptación:** un tercero reproduce el pipeline con `README.md` sin asistencia.
 
@@ -959,7 +968,6 @@ Analisis_Saber11/
 ├── docs/
 │   ├── PLAN_MAESTRO.md  adr/  data_dictionary.md  lineage.md
 │   ├── bi/medidas_dax.md  manual_tecnico.md  manual_usuario.md  operacion.md
-├── notebooks/                   # 01_perfilamiento, 02_eda, 03_ml_exploracion (sin salidas con PII)
 ├── sql/
 │   ├── bronze/  silver/  gold/  quality/
 ├── src/saber11/
@@ -1344,7 +1352,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E21 | Informe de sesgos | F10 | CSV/MD/PNG | 10 dimensiones con n, RMSE, MAE, sesgo, R², desviación típica e IC; brechas con IC y alertas | n e IC por grupo; grupos con n < 30 marcados no concluyentes |
 | E22 | Pipeline CLI | F11 | Py/PS1/MD | `run` completo con `--from`/`--config`, `tasks.ps1` y `docs/operacion.md` | E2E código 0 y re-ejecución con métricas idénticas |
 | E23 | Suite de pruebas | F12 | Py/MD | 266 pruebas en unit, data, integration, bi y rls + `docs/pruebas.md` | Verde; cobertura 94 % con umbral 80 % exigido por la propia suite |
-| E24 | Checklist seguridad | F13 | MD | §21 | Completo |
+| E24 | Checklist seguridad | F13 | MD + Py | `docs/seguridad.md` con evidencia por medida y `tests/unit/test_repo_seguro.py` | Completo: 9/12 verificadas, 3 pendientes de decisión registradas |
 | E25 | Manual técnico | F14 | MD | Arquitectura, operación | Tercero reproduce |
 | E26 | Manual de usuario | F14 | MD/PDF | Uso de dashboards | Validado por usuario |
 | E27 | Informe final | F14 | MD/PDF | Resultados y limitaciones | Aprobación SUP |
@@ -1443,21 +1451,21 @@ pytest -q
 
 ## 30. Checklist final de puesta en producción
 - [ ] Entorno instalable desde `requirements.txt` en máquina limpia
-- [ ] Clave HMAC custodiada y respaldada fuera del repo
-- [ ] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos de rectores reales (las cuentas del tenant de ensayo sí se versionan, ADR-0019)
+- [ ] Clave HMAC custodiada y respaldada fuera del repo — **decisión pendiente del responsable del dato** (`docs/seguridad.md` §3)
+- [x] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos de rectores reales (F13; automatizado en `tests/unit/test_repo_seguro.py`)
 - [x] Pipeline E2E código 0; re-ejecución idéntica (F11, comprobado en ejecución real y en prueba automática)
-- [ ] 100 % reglas DQ bloqueantes PASS; informe archivado
-- [ ] Silver/Gold/Power BI sin PII (test DQ-PRI-001)
+- [x] 100 % reglas DQ bloqueantes PASS; informe archivado (gates de Silver y Gold aprobados, `reports/quality/`)
+- [x] Silver/Gold/Power BI sin PII (DQ-PRI-001 y `tests/data/test_no_pii.py`, F12–F13)
 - [x] KPIs del dashboard estratégico validados contra SQL (F6, 21/21)
 - [x] RLS-01..11 PASS con evidencias (F7, `tests/rls/casos_rls.md`); limitación Desktop comunicada
-- [ ] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003, `k_min` documentado)
+- [x] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003 y `tests/data/test_gold_referential.py`; modelo operativo solo con agregados, ADR-0018)
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer
 - [x] Modelos comparados vs baseline (F8: mejora 6,91 RMSE, IC [5,37; 8,54]); tests anti-leakage verdes
 - [x] SHAP con advertencia de no causalidad y alias del diseño (F9; prueba de recuperación aprobada)
 - [x] Informe de sesgos revisado (F10: sin sesgo propio de grupo salvo 4 subgrupos; brechas explicadas por la dispersión del resultado)
 - [ ] Manuales técnico y de usuario entregados
 - [ ] Pendientes de definición resueltos o aceptados formalmente
-- [ ] Revisión jurídica de tratamiento de datos (pendiente de validación)
+- [ ] Revisión jurídica de tratamiento de datos — **pendiente antes de cargar datos reales** (`docs/seguridad.md` §3)
 
 ---
 

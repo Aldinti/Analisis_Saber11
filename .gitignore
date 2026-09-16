@@ -23,6 +23,7 @@ config/seguridad_rectores.csv
 !reports/bi/*.csv
 !reports/ml/*.csv
 !reports/shap/*.csv
+!reports/fairness/*.csv
 *.tmp
 
 # Secretos y credenciales

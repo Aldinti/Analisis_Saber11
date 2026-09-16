@@ -62,7 +62,7 @@ def _indices_por_grupo(grupos: Sequence[Any]) -> dict[Any, np.ndarray]:
     return {g: idx.to_numpy() for g, idx in serie.groupby(serie, observed=True).groups.items()}
 
 
-def _remuestreos_por_grupo(
+def remuestreos_por_grupo(
     grupos: Sequence[Any], n_muestras: int, semilla: int
 ) -> list[np.ndarray]:
     """Índices de `n_muestras` remuestreos con reemplazo sobre los grupos (no sobre las filas)."""
@@ -88,7 +88,7 @@ def ic_bootstrap(
     y = np.asarray(y, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
     acumulado: dict[str, list[float]] = {m: [] for m in METRICAS}
-    for idx in _remuestreos_por_grupo(grupos, n_muestras, semilla):
+    for idx in remuestreos_por_grupo(grupos, n_muestras, semilla):
         for nombre, valor in metricas(y[idx], y_pred[idx]).items():
             acumulado[nombre].append(valor)
     alfa = (1 - nivel) / 2
@@ -117,7 +117,7 @@ def ic_mejora(
     b = np.asarray(y_pred_referencia, dtype=float)
     diferencias = [
         metricas(y[idx], b[idx])[metrica] - metricas(y[idx], a[idx])[metrica]
-        for idx in _remuestreos_por_grupo(grupos, n_muestras, semilla)
+        for idx in remuestreos_por_grupo(grupos, n_muestras, semilla)
     ]
     alfa = (1 - nivel) / 2
     return {

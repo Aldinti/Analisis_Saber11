@@ -8,6 +8,7 @@ Uso (desde la raíz del proyecto, con el entorno .venv):
     python -m saber11.pipeline run --stage gold
     python -m saber11.pipeline run --stage ml
     python -m saber11.pipeline run --stage shap
+    python -m saber11.pipeline run --stage fairness
 
 Solo están implementadas las etapas ya ejecutadas en el plan; las demás informan su fase.
 """
@@ -24,12 +25,13 @@ from saber11.ingest.contract import ContratoFuenteError, validar_fuente
 from saber11.logging_utils import setup_logger
 from saber11.metadata import run_log
 from saber11.ml.experimento import ejecutar as ejecutar_experimento_ml
+from saber11.ml.experimento_sesgos import ejecutar as ejecutar_experimento_sesgos
 from saber11.ml.experimento_shap import ejecutar as ejecutar_experimento_shap
 from saber11.quality.engine import ejecutar_gate, gate_aprobado, ultimo_run
 from saber11.transform.gold import construir_gold
 from saber11.transform.silver import ingerir_silver
 
-ETAPAS_PENDIENTES = {"fairness": "F10"}
+ETAPAS_PENDIENTES: dict[str, str] = {}
 log = setup_logger("saber11.pipeline")
 
 
@@ -224,6 +226,40 @@ def ejecutar_shap(settings: dict[str, Any], raiz: Path) -> int:
     return 0
 
 
+def ejecutar_fairness(settings: dict[str, Any], raiz: Path) -> int:
+    """Evaluación de sesgos de F10. Códigos: 0 éxito, 5 sin ejecución de ML disponible, 1 error."""
+    run_id = run_log.nuevo_run_id()
+    inicio = run_log.ahora_utc()
+    ruta_log = raiz / settings["paths"]["metadata"] / "run_log.parquet"
+    sha_git = run_log.git_sha(raiz)
+    trazabilidad = {"git_con_cambios": run_log.git_con_cambios(raiz)}
+    ml_run = ultimo_run(run_log.leer(ruta_log), "ml")
+    ml_run_id = ml_run["run_id"] if ml_run else None
+    log.info("Inicio etapa fairness run_id=%s ml=%s", run_id, ml_run_id)
+    if not ml_run_id:
+        run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+            run_id, "fairness", "fallido", inicio, run_log.ahora_utc(), git_sha=sha_git,
+            detalle={"error": "sin_ejecucion_ml", "mensaje": "no hay predicciones que evaluar", **trazabilidad}))
+        log.error("Evaluación de sesgos bloqueada: no hay predicciones. Ejecute: run --stage ml")
+        return 5
+    try:
+        r = ejecutar_experimento_sesgos(settings, raiz, run_id, ml_run_id)
+    except Exception as e:  # noqa: BLE001 - se registra el fallo y se devuelve código de error
+        run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+            run_id, "fairness", "fallido", inicio, run_log.ahora_utc(), git_sha=sha_git,
+            detalle={"error": type(e).__name__, "mensaje": str(e), "run_id_ml": ml_run_id, **trazabilidad}))
+        log.error("Etapa fairness fallida: %s: %s", type(e).__name__, e)
+        return 1
+    run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+        run_id, "fairness", "exitoso", inicio, run_log.ahora_utc(), filas=r.filas,
+        source_sha256=ml_run["source_sha256"], git_sha=sha_git,
+        detalle={**r.detalle(), **trazabilidad}))
+    log.info("Fin etapa fairness: dimensiones=%d alertas=%s subgrupos_con_sesgo=%d informe=%s",
+             len(r.dimensiones), [d.nombre for d in r.alertas], len(r.subgrupos_con_sesgo),
+             r.rutas["informe"])
+    return 0
+
+
 def validar_fuente_cli(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path) -> int:
     run_id = run_log.nuevo_run_id()
     resultado = validar_fuente(ruta_fuente(settings, raiz), contrato)
@@ -240,7 +276,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("validate-source", help="valida el CSV de landing contra el contrato")
     run = sub.add_parser("run", help="ejecuta una etapa del pipeline")
     run.add_argument("--stage", required=True,
-                     choices=["bronze", "silver", "dq", "gold", "ml", "shap", *ETAPAS_PENDIENTES])
+                     choices=["bronze", "silver", "dq", "gold", "ml", "shap", "fairness",
+                              *ETAPAS_PENDIENTES])
     run.add_argument("--ingest-id", help="partición Bronze a procesar en silver (por defecto, la vigente)")
     run.add_argument("--layer", choices=["silver", "gold"], default="silver", help="capa evaluada por el quality gate")
     args = parser.parse_args(argv)
@@ -251,6 +288,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.stage in ETAPAS_PENDIENTES:
         log.error("La etapa '%s' aún no está implementada (fase %s del plan)", args.stage, ETAPAS_PENDIENTES[args.stage])
         return 3
+    if args.stage == "fairness":
+        return ejecutar_fairness(settings, PROJECT_ROOT)
     if args.stage == "shap":
         return ejecutar_shap(settings, PROJECT_ROOT)
     if args.stage == "ml":

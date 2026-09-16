@@ -82,7 +82,7 @@ Analisis_Saber11/
    .\.venv\Scripts\pytest.exe
    ```
 
-5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`, `gold`, `ml`, `shap`):
+5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`, `gold`, `ml`, `shap`, `fairness`):
    ```powershell
    $env:PYTHONPATH = "src"
    .\.venv\Scripts\python.exe -m saber11.pipeline validate-source      # contrato del CSV de data/landing
@@ -93,11 +93,13 @@ Analisis_Saber11/
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage dq --layer gold     # quality gate antes de BI/ML
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage ml     # exige el gate de Gold aprobado
    .\.venv\Scripts\python.exe -m saber11.pipeline run --stage shap   # explicabilidad del modelo de la etapa ml
+   .\.venv\Scripts\python.exe -m saber11.pipeline run --stage fairness   # desempeño por subgrupo
    ```
    Códigos de salida: `0` éxito, omitido o gate aprobado, `1` fallo técnico, `2` contrato incumplido, `3` etapa aún no implementada, `4` quality gate rechazado, `5` etapa bloqueada porque la capa anterior no tiene el gate aprobado (Gold exige el de Silver; ML, el de Gold).
    Para el dashboard estratégico abra `powerbi/Saber11_Estrategico.pbip` (si movió el proyecto, actualice el parámetro `RutaGold` en Transformar datos) y pulse *Actualizar*. El dashboard operativo con RLS por colegio es `powerbi/Saber11_Operativo.pbip` (pruebas en *Modelado → Ver como* con `Rol_Rector`; casos en `tests/rls/casos_rls.md`). KPIs de control: `python -m saber11.bi.kpi_control [--tablero operativo]`; catálogo DAX: `python -m saber11.bi.catalogo_medidas [--tablero operativo]`.
    La etapa `ml` (F8) entrena baseline, Ridge, Lasso y XGBoost con validación cruzada anidada por colegio y una única evaluación del año más reciente: deja el modelo elegido en `models/<run_id>/` (no versionado, se regenera) y la evidencia en `reports/ml/comparacion_modelos.md`, `reports/ml/resultados_cv.csv` y `docs/ml/variables_modelo.md`.
    La etapa `shap` (F9) explica el modelo elegido y lo contrasta con un modelo de la otra familia: publica figuras, valores SHAP y `reports/shap/interpretacion.md`, con la prueba de recuperación de los efectos con que se generaron los datos ficticios.
+   La etapa `fairness` (F10) mide el desempeño por subgrupo con IC bootstrap, separa el sesgo global del propio de cada grupo y deja `reports/fairness/{desempeno_subgrupos.csv, brechas_rmse.png, informe_sesgos.md}`.
    Cada ejecución queda en `data/metadata/run_log.parquet`; los resultados de calidad en `data/metadata/dq_results.parquet` y los informes (contrato y `dq_<run_id>.md`) en `reports/quality/`.
 
 ---

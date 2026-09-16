@@ -803,9 +803,19 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 | Objetivo | Verificar desempeño equitativo por subgrupo |
 | Actividades | Métricas RMSE/MAE/sesgo medio de residuo (`mean(y_pred - y)`) por `sexo`, `estrato`, `zona`, `naturaleza_colegio`, `modelo_pedagogico`, `colegio`, `anio` e interseccionales; tamaño de muestra por grupo; IC bootstrap; brecha máx-mín |
 | Herramientas | pandas, scikit-learn (Fairlearn opcional — **Recomendación técnica adicional**, verificar licencia antes de adoptar) |
-| Salida / Entregable | `reports/fairness/desempeno_subgrupos.csv`, `informe_sesgos.md` |
+| Salida / Entregable | `reports/fairness/{desempeno_subgrupos.csv, brechas_rmse.png, informe_sesgos.md}` |
 | Dependencias | F8 |
 | Criterio de aceptación | Cada subgrupo con n reportado; grupos n<30 marcados "no concluyente"; brechas con IC; umbral de alerta (*Pendiente de definición*, propuesta: brecha RMSE > 10 % del RMSE global) |
+
+**Implementación y resultados F10 (cerrada):**
+- **Módulos:** `src/saber11/ml/fairness.py` (métricas por subgrupo, brechas, alertas) y `experimento_sesgos.py` (orquestación e informe). Etapa `run --stage fairness`, que lee `predicciones_test.parquet` de la última ejecución de `ml` (código 5 si no hay ninguna).
+- **Dimensiones (10):** `sexo`, `estrato`, `zona`, `naturaleza_colegio`, `modelo_pedagogico`, `nombre_colegio`, `periodo`, `anio` y las interseccionales `naturaleza × zona` y `sexo × estrato`. `anio` queda **no evaluable**: el holdout tiene un solo año.
+- **Unidad de remuestreo:** colegios, salvo en la dimensión `nombre_colegio`, donde cada grupo ya es un colegio y un bootstrap de colegios daría intervalos de ancho cero; ahí se remuestrean filas.
+- **Hallazgo — el sesgo es global, no de grupo:** el modelo predice **−2,38 puntos** por debajo del resultado real (IC 95 % [−3,92; −0,91]) en todo 2024, porque la regularización encoge la tendencia anual y el año de prueba está fuera del rango de entrenamiento. Ese desvío aparecía en 14 subgrupos y, leído sin referencia, sugería sesgos por sexo, zona y naturaleza que no existen. El informe reporta primero el sesgo global y solo marca **sesgo propio** cuando el intervalo de la diferencia frente al global excluye 0: quedan 4 subgrupos (estrato 6, `sexo × estrato` Masculino·6 y los colegios PQR y MNO).
+- **Hallazgo — las brechas de RMSE siguen a la dispersión del resultado:** en las cuatro dimensiones con alerta la correlación entre el RMSE del grupo y la desviación típica de su resultado real es 0,90–0,99. En estrato 6 la desviación típica baja a 37,3 frente a 44,7 en estrato 2, por el techo de la escala (con estrato 6, el 13,7 % de Matemáticas y el 22,4 % de Inglés llegan a 100). El informe publica la desviación típica junto al RMSE para que la comparación entre grupos no se lea como calidad desigual del modelo.
+- **Brecha de `nombre_colegio` (11,29 puntos):** es la esperada, porque la identidad del colegio no es predictora (se reserva como grupo de validación) y su efecto propio queda entero en el error.
+- **Independencia confirmada:** ningún par de factores supera V de Cramér 0,05 en el conjunto de prueba, así que cada brecha se lee por su cuenta (§19).
+- **Umbrales:** `n_min_subgrupo` 30 y `umbral_brecha_rmse` 0,10 en `settings.yaml`; el criterio de alerta del plan queda así configurable y registrado en el informe.
 
 ### F11 — Automatización
 | Campo | Contenido |
@@ -1316,7 +1326,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E18 | Informe comparación de modelos | F8 | MD + CSV | `reports/ml/comparacion_modelos.md` y `resultados_cv.csv`: CV, robustez temporal, prueba 2024 con IC bootstrap | Regla §16.4 aplicada y documentada |
 | E19 | Gráficos y valores SHAP | F9 | PNG/Parquet/CSV | 9 figuras (global, enjambre, dependencia, 3 casos, comparación), `shap_values.parquet` y `recuperacion_efectos.csv` | Aditividad verificada (≤ 1e-3) |
 | E20 | Interpretación SHAP | F9 | MD | `reports/shap/interpretacion.md`: método, aditividad, importancia, recuperación de efectos y límites | Incluye la advertencia de causalidad, los alias del diseño y la de datos ficticios |
-| E21 | Informe de sesgos | F10 | CSV/MD | Subgrupos | n e IC por grupo |
+| E21 | Informe de sesgos | F10 | CSV/MD/PNG | 10 dimensiones con n, RMSE, MAE, sesgo, R², desviación típica e IC; brechas con IC y alertas | n e IC por grupo; grupos con n < 30 marcados no concluyentes |
 | E22 | Pipeline CLI | F11 | Py/PS1 | Ejecución de un comando | E2E código 0 |
 | E23 | Suite de pruebas | F12 | Py | §22 | Verde |
 | E24 | Checklist seguridad | F13 | MD | §21 | Completo |
@@ -1429,7 +1439,7 @@ pytest -q
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer
 - [x] Modelos comparados vs baseline (F8: mejora 6,91 RMSE, IC [5,37; 8,54]); tests anti-leakage verdes
 - [x] SHAP con advertencia de no causalidad y alias del diseño (F9; prueba de recuperación aprobada)
-- [ ] Informe de sesgos revisado
+- [x] Informe de sesgos revisado (F10: sin sesgo propio de grupo salvo 4 subgrupos; brechas explicadas por la dispersión del resultado)
 - [ ] Manuales técnico y de usuario entregados
 - [ ] Pendientes de definición resueltos o aceptados formalmente
 - [ ] Revisión jurídica de tratamiento de datos (pendiente de validación)

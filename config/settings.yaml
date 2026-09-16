@@ -45,3 +45,5 @@ ml:
   cv_group_col: "nombre_colegio"
   random_state: 20260913
   colegios_retenidos: ["ABC", "MNO"]   # nunca vistos en entrenamiento (uno público, uno privado)
+  n_min_subgrupo: 30                   # F10: por debajo, el subgrupo se marca "no concluyente"
+  umbral_brecha_rmse: 0.10             # F10: alerta si la brecha supera este % del RMSE global

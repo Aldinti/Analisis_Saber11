@@ -22,6 +22,7 @@ config/seguridad_rectores.csv
 !tests/fixtures/*.csv
 !reports/bi/*.csv
 !reports/ml/*.csv
+!reports/shap/*.csv
 *.tmp
 
 # Secretos y credenciales

@@ -1,0 +1,10 @@
+variable,contraste,esperado,medido,diferencia,error_relativo,signo_coincide,exigida,nota
+estrato,por nivel,12.5,11.48603676231092,-1.0139632376890795,-0.08111705901512636,True,True,signo y orden de magnitud comparables
+naturaleza_colegio,Privada − Pública,21.923076923076923,19.88182363696774,-2.041253286109182,-0.09310979901550655,True,True,signo y orden de magnitud comparables
+zona,Rural − Urbana,-20.0,-18.282433992067563,1.7175660079324366,-0.08587830039662184,True,True,signo y orden de magnitud comparables
+periodo,I − II,0.0,0.0,0.0,,True,False,efecto nulo por construcción; |medido| ≤ 2 puntos
+anio,por año,4.0,,,,,False,no evaluable en el conjunto de prueba (valor único)
+modelo_pedagogico,Aprendizaje basado en proyectos − Tradicional,7.5,8.026897422110643,0.5268974221106433,0.07025298961475243,True,False,signo y orden de magnitud comparables
+modelo_pedagogico,Constructivista − Tradicional,5.0,4.304283453998342,-0.6957165460016581,-0.13914330920033163,True,False,signo y orden de magnitud comparables
+modelo_pedagogico,Pedagogía conceptual − Tradicional,2.5,4.304283453998342,1.804283453998342,0.7217133815993367,True,False,signo y orden de magnitud comparables
+sexo,Masculino − Femenino,0.0,0.0,0.0,,True,False,efecto nulo por construcción; |medido| ≤ 2 puntos

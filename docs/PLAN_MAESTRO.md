@@ -780,11 +780,22 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 |---|---|
 | Objetivo | Explicar el comportamiento del modelo final |
 | Actividades | `shap.TreeExplainer` (XGBoost) y `shap.LinearExplainer` (Ridge) sobre el conjunto **test**; importancia global (media |SHAP|) **agregando las dummies por variable original**; beeswarm; gráficos de dependencia (estrato, sexo); explicaciones locales (waterfall) de casos representativos **sin identificadores**; comparación con coeficientes Ridge |
-| Salida / Entregable | `reports/shap/{importancia_global.png, beeswarm.png, dependencia_*.png, waterfall_*.png, shap_values.parquet, interpretacion.md}` |
+| Salida / Entregable | `reports/shap/{importancia_global.png, beeswarm.png, comparacion_modelos.png, dependencia_*.png, waterfall_p10\|p50\|p90.png, shap_values.parquet, recuperacion_efectos.csv, interpretacion.md}` |
 | Dependencias | F8 |
 | Criterio de aceptación | Suma de SHAP + valor esperado ≈ predicción (tolerancia 1e-3); prueba de recuperación de efectos sintéticos superada (§17); `interpretacion.md` incluye: **"SHAP explica el comportamiento del modelo; no demuestra causalidad."** y la advertencia de datos ficticios |
 | Riesgos | Interpretar "impacto de ABP" como efecto pedagógico causal |
 | Mitigación | Advertencia explícita; contraste con parámetros de generación |
+
+**Implementación y resultados F9 (cerrada):**
+- **Módulos:** `src/saber11/ml/explain.py` (cálculo, agregación de dummies, contrastes y prueba de recuperación), `graficos.py` (figuras, backend `Agg`) y `experimento_shap.py` (orquestación e interpretación). Etapa `run --stage shap`, que exige una ejecución previa de `ml` en el `run_log` (código 5 si no la hay) y toma de ella el modelo y los conjuntos exactos.
+- **Qué se explica:** el modelo final de F8 (Lasso) con `LinearExplainer` y, como contraste de la otra familia, XGBoost con `TreeExplainer`, reajustado con los hiperparámetros que F8 registró. Las dummies se agregan por variable original antes de rankear.
+- **Aditividad verificada:** error máximo 5,7e-14 (Lasso) y 3,7e-04 (XGBoost), dentro de la tolerancia 1e-3 del plan.
+- **Importancia global (puntos del puntaje global):** `estrato` 14,79 · `naturaleza_colegio` 9,95 · `zona` 9,15 · `anio` 4,82 · `modelo_pedagogico` 2,12 · `periodo` 0 · `sexo` 0. XGBoost ordena igual las tres primeras, lo que respalda la lectura.
+- **Prueba de recuperación de efectos sintéticos: APROBADA.** Medido frente a esperado: estrato 11,49 vs 12,50; Privada − Pública 19,88 vs 21,92; Rural − Urbana −18,28 vs −20,00; ABP − Tradicional 8,03 vs 7,50. Los signos de las tres variables exigidas por §17 coinciden y la magnitud queda ligeramente por debajo por la regularización.
+- **Resultado destacable:** Lasso anula exactamente `periodo` y `sexo`, que son las dos variables cuyo efecto real sobre el puntaje global es nulo por construcción (los efectos de sexo en Matemáticas y Lectura Crítica se compensan con el mismo peso en la fórmula del Global).
+- **Corrección de la conversión de escala:** §17 anticipaba un factor ×4,6 para pasar de efecto por área a puntaje global; con la fórmula vigente del Global el factor correcto es **×5** para un efecto común a las cinco áreas y **×5/13** para uno que solo afecta Inglés. El código lo deriva de `parametros_generacion.json`, no de una constante escrita a mano.
+- **Lección — explicador de árboles:** `TreeExplainer` en modo `interventional` falla con XGBoost 3.4 (*"Categorical split is not yet supported"*); se usa `tree_path_dependent`, exacto para la aditividad. Cada modelo tiene entonces su propio valor esperado, así que entre modelos se comparan rankings y no valores absolutos.
+- **Sin parámetros del generador** (caso de datos reales) la etapa continúa y deja constancia de que la prueba de recuperación no aplica.
 
 ### F10 — Evaluación de sesgos
 | Campo | Contenido |
@@ -1303,8 +1314,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E16 | Matriz de pruebas RLS | F7 | MD + CSV (evidencias DAX) | Esperado, pre-validación DAX y resultado "Ver como" | 100 % aprobado |
 | E17 | Modelos entrenados | F8 | joblib/JSON | Baseline, Ridge, Lasso, XGB con CV anidada por colegio | Métricas registradas en `models/<run_id>/metrics.json`; modelo elegido Lasso |
 | E18 | Informe comparación de modelos | F8 | MD + CSV | `reports/ml/comparacion_modelos.md` y `resultados_cv.csv`: CV, robustez temporal, prueba 2024 con IC bootstrap | Regla §16.4 aplicada y documentada |
-| E19 | Gráficos y valores SHAP | F9 | PNG/Parquet | Global/local | Aditividad verificada |
-| E20 | Interpretación SHAP | F9 | MD | Lectura y límites | Incluye advertencia causalidad y H3 |
+| E19 | Gráficos y valores SHAP | F9 | PNG/Parquet/CSV | 9 figuras (global, enjambre, dependencia, 3 casos, comparación), `shap_values.parquet` y `recuperacion_efectos.csv` | Aditividad verificada (≤ 1e-3) |
+| E20 | Interpretación SHAP | F9 | MD | `reports/shap/interpretacion.md`: método, aditividad, importancia, recuperación de efectos y límites | Incluye la advertencia de causalidad, los alias del diseño y la de datos ficticios |
 | E21 | Informe de sesgos | F10 | CSV/MD | Subgrupos | n e IC por grupo |
 | E22 | Pipeline CLI | F11 | Py/PS1 | Ejecución de un comando | E2E código 0 |
 | E23 | Suite de pruebas | F12 | Py | §22 | Verde |
@@ -1417,7 +1428,7 @@ pytest -q
 - [ ] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003, `k_min` documentado)
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer
 - [x] Modelos comparados vs baseline (F8: mejora 6,91 RMSE, IC [5,37; 8,54]); tests anti-leakage verdes
-- [ ] SHAP con advertencia de no causalidad y limitación H3
+- [x] SHAP con advertencia de no causalidad y alias del diseño (F9; prueba de recuperación aprobada)
 - [ ] Informe de sesgos revisado
 - [ ] Manuales técnico y de usuario entregados
 - [ ] Pendientes de definición resueltos o aceptados formalmente

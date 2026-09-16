@@ -18,6 +18,8 @@ def num(valor: float | None, decimales: int = 3) -> str:
     """Número con coma decimal (convención de los informes del proyecto)."""
     if valor is None:
         return "—"
+    if abs(valor) < 0.5 * 10 ** -decimales:
+        valor = 0.0  # evita el «-0,00» de los coeficientes anulados
     return f"{valor:,.{decimales}f}".replace(",", " ").replace(".", ",")
 
 

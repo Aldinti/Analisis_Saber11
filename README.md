@@ -36,6 +36,9 @@ Analisis_Saber11/
 │   ├── operacion.md             # manual de operación del pipeline
 │   ├── pruebas.md               # qué cubre la suite y qué queda manual
 │   ├── seguridad.md             # checklist de privacidad y seguridad (F13)
+│   ├── lineage.md               # de dónde viene cada número
+│   ├── manual_tecnico.md        # para quien mantenga el proyecto
+│   ├── manual_usuario.md        # para quien lea los tableros
 │   ├── ml/variables_modelo.md   # catálogo de predictoras y exclusiones (generado por --stage ml)
 │   ├── data_classification.md
 │   └── adr/                 # Decisiones arquitectónicas registradas
@@ -121,3 +124,21 @@ Analisis_Saber11/
 - **PII Eliminada:** Los identificadores directos (`nroDoc`, `nombre1..apellido2`) son eliminados en la capa Silver.
 - **Seudonimización Robusta:** Se utiliza `HMAC-SHA-256` con clave secreta; no se confía en hashing simple sin secreto.
 - **Protección contra Cuasi-identificadores:** Se aplica supresión primaria y complementaria para cualquier celda o subgrupo con menos de 5 estudiantes ($k_{\min} \ge 5$).
+- **Revisión completa:** el checklist con evidencia por medida y los pendientes está en [`docs/seguridad.md`](docs/seguridad.md).
+
+> ⚠️ **Los datos del repositorio son ficticios** (ver `scripts/generar_datos_ficticios.py`). Sirven para validar la plataforma; ningún resultado describe la realidad educativa.
+
+---
+
+## 5. Documentación
+
+| Si necesita… | Lea |
+|---|---|
+| Ejecutar y mantener el pipeline día a día | [`docs/operacion.md`](docs/operacion.md) |
+| Entender o extender el código | [`docs/manual_tecnico.md`](docs/manual_tecnico.md) |
+| Usar los tableros de Power BI | [`docs/manual_usuario.md`](docs/manual_usuario.md) |
+| Saber qué significa cada columna | [`docs/data_dictionary.md`](docs/data_dictionary.md) |
+| Saber de dónde viene un número | [`docs/lineage.md`](docs/lineage.md) |
+| Conocer los resultados y sus límites | [`reports/informe_final.md`](reports/informe_final.md) |
+| Saber qué cubren las pruebas | [`docs/pruebas.md`](docs/pruebas.md) |
+| Ver el plan y las decisiones | [`docs/PLAN_MAESTRO.md`](docs/PLAN_MAESTRO.md) · [`docs/adr/`](docs/adr/) |

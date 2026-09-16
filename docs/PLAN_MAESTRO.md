@@ -860,6 +860,14 @@ Detalle en §21. **Dependencias:** transversal; revisión final tras F11. **Acep
 ### F14 — Documentación y entrega
 Detalle en §24 y §28. **Dependencias:** F0–F13. **Aceptación:** un tercero reproduce el pipeline con `README.md` sin asistencia.
 
+**Entrega y resultados F14 (cerrada):**
+- **Entregable que faltaba:** `docs/lineage.md` (E12) no se había escrito. Recoge el recorrido CSV → Bronze → Silver → Gold → BI/ML, qué transforma y qué **no** cambia cada salto, los identificadores que enlazan las capas (`_source_sha256`, `_ingest_id`, `run_id`, `resultado_id`), cómo rehacer el camino en los dos sentidos —de un número del tablero al archivo de origen, de una predicción a sus datos, de una celda en blanco a la supresión que la causó— y qué se pierde a propósito en cada capa.
+- **`docs/manual_tecnico.md` (E25):** las cuatro ideas que gobiernan el diseño, el mapa del código, recetas para los cambios habituales (añadir una regla DQ, una columna, una medida DAX, un modelo, cambiar un umbral), las decisiones que hay que conocer antes de tocar nada y las **trampas conocidas**, cada una con el fallo real que la originó.
+- **`docs/manual_usuario.md` (E26):** para la Dirección de Calidad y los rectores, sin jerga. Qué muestra cada página, **por qué a veces no aparece un número** (supresión, usuario sin colegio, comparación sin datos), cómo leer bien las cifras y por qué compartir el archivo de Power BI equivale a compartir los datos.
+- **`reports/informe_final.md` (E27):** las limitaciones **antes** que los resultados, el estado de los cuatro objetivos con sus cifras, cómo se sostiene cada afirmación y los pendientes al cierre. Cierra diciendo qué demuestra el proyecto —que la plataforma es verificable— y qué no: nada sobre la educación real.
+- **La documentación también se prueba:** `tests/unit/test_documentacion.py` verifica que existen los 14 documentos exigidos por §28, que ningún enlace relativo está roto, que el linaje nombra las 11 tablas Gold y que la advertencia de datos ficticios aparece en la primera mitad de los documentos destinados a leerse.
+
+
 ---
 
 ## 9. Cronograma
@@ -1340,7 +1348,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E09 | Informe DQ por ejecución | F5 | MD | Resultados | Generado cada run |
 | E10 | Gold estrella | F4 | Parquet | Dims, hechos, agregados | Integridad referencial |
 | E11 | Diccionario de datos | F3–F4 | MD | Columnas, tipos, clasificación | 100 % columnas |
-| E12 | Linaje | F4 | MD/Mermaid | CSV→Gold | Cada columna Gold trazada |
+| E12 | Linaje | F4 (entregado en F14) | MD/Mermaid | `docs/lineage.md`: recorrido, identificadores de enlace y trazado inverso | Las 11 tablas Gold trazadas, verificado por prueba |
 | E13 | Dashboard estratégico | F6 | PBIP (TMDL + PBIR) | 5 páginas, 53 visuales, rótulo de datos ficticios | 21/21 KPIs = SQL; revisión visual del SUP aprobada |
 | E14 | Catálogo DAX | F6–F7 | MD | Medidas (generado desde TMDL) | Descritas, validadas y sincronizadas por prueba |
 | E15 | Dashboard operativo + RLS | F7 | PBIP (TMDL + PBIR) | Modelo solo con agregados, roles `Rol_Rector`/`Rol_Direccion`, 3 páginas | RLS-01..11 PASS; 13/13 KPIs = SQL |
@@ -1353,9 +1361,9 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E22 | Pipeline CLI | F11 | Py/PS1/MD | `run` completo con `--from`/`--config`, `tasks.ps1` y `docs/operacion.md` | E2E código 0 y re-ejecución con métricas idénticas |
 | E23 | Suite de pruebas | F12 | Py/MD | 266 pruebas en unit, data, integration, bi y rls + `docs/pruebas.md` | Verde; cobertura 94 % con umbral 80 % exigido por la propia suite |
 | E24 | Checklist seguridad | F13 | MD + Py | `docs/seguridad.md` con evidencia por medida y `tests/unit/test_repo_seguro.py` | Completo: 9/12 verificadas, 3 pendientes de decisión registradas |
-| E25 | Manual técnico | F14 | MD | Arquitectura, operación | Tercero reproduce |
-| E26 | Manual de usuario | F14 | MD/PDF | Uso de dashboards | Validado por usuario |
-| E27 | Informe final | F14 | MD/PDF | Resultados y limitaciones | Aprobación SUP |
+| E25 | Manual técnico | F14 | MD | `docs/manual_tecnico.md`: diseño, mapa del código, recetas de cambio y trampas conocidas | Tercero reproduce con README + operacion.md |
+| E26 | Manual de usuario | F14 | MD | `docs/manual_usuario.md`: las 8 páginas, por qué faltan números y cómo leerlos | Pendiente de validación por el usuario final |
+| E27 | Informe final | F14 | MD | `reports/informe_final.md`: limitaciones primero, resultados por objetivo y pendientes | Pendiente de aprobación del SUP |
 | E28 | `scripts/generar_datos_ficticios.py` + tests | F1b | Py | Generador reproducible de datos ficticios | Idempotente, determinista con semilla, tests verdes |
 | E29 | CSV ampliado + `parametros_generacion.json` + `validacion_ampliacion.json` | F1b | CSV/JSON | Fuente de trabajo del proyecto | `aprobado: true`; originales intactos |
 
@@ -1450,7 +1458,7 @@ pytest -q
 ---
 
 ## 30. Checklist final de puesta en producción
-- [ ] Entorno instalable desde `requirements.txt` en máquina limpia
+- [x] Entorno instalable desde `requirements.txt` (`tasks.ps1 setup`); queda por confirmar en una máquina distinta de la de desarrollo
 - [ ] Clave HMAC custodiada y respaldada fuera del repo — **decisión pendiente del responsable del dato** (`docs/seguridad.md` §3)
 - [x] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos de rectores reales (F13; automatizado en `tests/unit/test_repo_seguro.py`)
 - [x] Pipeline E2E código 0; re-ejecución idéntica (F11, comprobado en ejecución real y en prueba automática)
@@ -1463,8 +1471,8 @@ pytest -q
 - [x] Modelos comparados vs baseline (F8: mejora 6,91 RMSE, IC [5,37; 8,54]); tests anti-leakage verdes
 - [x] SHAP con advertencia de no causalidad y alias del diseño (F9; prueba de recuperación aprobada)
 - [x] Informe de sesgos revisado (F10: sin sesgo propio de grupo salvo 4 subgrupos; brechas explicadas por la dispersión del resultado)
-- [ ] Manuales técnico y de usuario entregados
-- [ ] Pendientes de definición resueltos o aceptados formalmente
+- [x] Manuales técnico y de usuario entregados (F14; el de usuario queda pendiente de validación con el usuario final)
+- [ ] Pendientes de definición resueltos o aceptados formalmente — listados en `reports/informe_final.md` §8 y `docs/seguridad.md` §3
 - [ ] Revisión jurídica de tratamiento de datos — **pendiente antes de cargar datos reales** (`docs/seguridad.md` §3)
 
 ---

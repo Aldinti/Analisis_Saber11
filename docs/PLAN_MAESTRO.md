@@ -732,7 +732,7 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 |---|---|
 | Objetivo | Vista por colegio restringida a su rector |
 | Actividades | Tabla de seguridad; rol `Rol_Rector`; página colegio construida sobre `agg_operativo_colegio` (**agregación y supresión de grupos pequeños**, §15.6); distribución por percentiles; niveles de desempeño; comparativo distrital desde `agg_benchmark_distrito`; deshabilitar exportación de datos subyacentes; matriz de casos de prueba; evidencias "Ver como rol" |
-| Entrada | Gold + `config/seguridad_rectores.csv` (*contenido real Pendiente de definición*; para pruebas usar cuentas ficticias con dominio `example.org`, marcadas como ficticias) |
+| Entrada | Gold + `config/seguridad_rectores.csv` (*rectores reales: Pendiente de definición, no versionado*; para pruebas, `config/seguridad_rectores.example.csv` con cuentas del tenant de ensayo `aldinti.onmicrosoft.com`, ADR-0019) |
 | Herramientas | Power BI Desktop 2.157, MCP de modelado de Power BI (modelo y roles en vivo), DAX, DuckDB (KPIs de control) |
 | Salida / Entregable | `powerbi/Saber11_Operativo.pbip` (modelo propio solo con agregados, roles `Rol_Rector`/`Rol_Direccion`, 3 páginas PBIR), `tests/rls/casos_rls.md`, `docs/bi/medidas_dax_operativo.md`, `reports/bi/validacion_kpis_operativo.md`, evidencias DAX `reports/bi/rls_simulacion_dax.csv` y `reports/bi/supresion_dax_fixture.csv`, ADR-0018 |
 | Dependencias | F4, F6 (formato PBIR y lecciones; el modelo semántico es propio, ADR-0018) |
@@ -742,13 +742,14 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 
 **Implementación y lecciones F7 (cerrada; casos RLS aprobados por el SUP con "Ver como"):**
 - **Modelo propio solo con agregados (ADR-0018):** en lugar de reutilizar el modelo de F6 (con filas por evaluación), el operativo importa `dim_colegio`, `agg_operativo_colegio`, `agg_benchmark_distrito` y `seguridad_rectores` (oculta, sin relaciones), más las calculadas `dim_anio` y `dim_area_operativa`. Motivo: con permiso *Build* o "Analizar en Excel" un Viewer consulta cualquier tabla del modelo; ocultar `fact_resultado` no basta para cumplir §15.6.
-- **RLS:** `Rol_Rector` con el filtro de §15.3 sobre `dim_colegio` y `seguridad_rectores`; `Rol_Direccion` sin filtro. Cuenta ficticia `rector.multi@example.org` (ABC, RST) añadida al ejemplo de seguridad para RLS-04.
+- **RLS:** `Rol_Rector` con el filtro de §15.3 sobre `dim_colegio` y `seguridad_rectores`; `Rol_Direccion` sin filtro. Cuenta de prueba `rector.multi@…` (ABC, RST) añadida al archivo de seguridad para RLS-04.
 - **Medidas (23):** salvaguardas en `Promedio Celda` (una dimensión, un área, n ≥ `K Min`, sin celdas suprimidas); `Area Mostrada` aplica Global si no hay un área única; percentiles solo para una celda; `Promedio Distrito` y `Promedio Distrito Categoria` desde el benchmark, ponderados por n y sin `ALL()`; `K Min` sincronizado con `settings.yaml` por prueba.
 - **Validación:** 13/13 KPIs = SQL calculado desde los hechos (no desde los agregados); RLS-01..08 pre-validados en DAX y aprobados con "Ver como"; RLS-09/10 validados apuntando temporalmente `RutaGold` a un Gold de fixture con grupos de 4 y 5 estudiantes; RLS-11: el modelo no tiene filas de estudiante y el informe exporta solo datos resumidos.
 - **Lección — impersonación:** el MCP no puede conectarse con `Roles=Rol_Rector` (usa la API de metadatos, que un rol de solo lectura no ve). La lógica del rol se pre-valida evaluando en DAX la misma expresión con el UPN literal (`FUNCTION` en `DEFINE`); la prueba con el rol real la hace el SUP.
 - **Fallo encontrado y corregido — CSV de seguridad:** al añadir líneas al ejemplo quedaron finales de línea mezclados (CRLF + LF) y Gold falló: la detección de dialecto de DuckDB 1.5.5 no lee ese archivo ni con `delim`/`quote` explícitos. `gold._cargar_seguridad` ahora usa el módulo `csv` de Python (`utf-8-sig`, admite BOM de Excel) y valida la cabecera; pruebas de regresión en `tests/integration/test_gold.py`. Cualquier CSV editado a mano en Windows podía provocarlo.
 - **Reutilización:** el constructor PBIR quedó en `src/saber11/bi/pbir.py` (compartido por `scripts/generar_reporte_estrategico.py` y `scripts/generar_reporte_operativo.py`); `kpi_control` y `catalogo_medidas` aceptan `--tablero operativo`.
-- **Pendiente (ADR-0015):** publicar en Power BI Service con la prueba de 60 días y repetir RLS-01..05 con cuentas reales de prueba como *Viewer*; definir los usuarios reales de `seguridad_rectores` y de `Rol_Direccion`.
+- **Lección — el Service exige identidades del tenant (ADR-0019):** al publicar con la prueba de 60 días, Power BI Service / Fabric **no acepta UPN inexistentes** en el directorio: no se pueden asignar miembros al rol ni obtener un `USERPRINCIPALNAME()` útil con `example.org`. Las cuentas de prueba pasaron a `@aldinti.onmicrosoft.com` (una por colegio + `rector.multi`), `config/seguridad_rectores.example.csv` se versiona con ellas y Gold se regeneró; `config/seguridad_rectores.csv` (rectores reales) sigue fuera de git y con precedencia.
+- **Pendiente (ADR-0015):** completar en el Service la repetición de RLS-01..05 con las cuentas del tenant asignadas como *Viewer* y registrar las evidencias; definir los usuarios reales de `seguridad_rectores` y de `Rol_Direccion`.
 
 ### F8 — Machine Learning
 | Campo | Contenido |
@@ -904,7 +905,8 @@ Analisis_Saber11/
 │   ├── settings.yaml            # rutas, encoding=cp1252, delim=';', semillas, umbrales
 │   ├── source_contract.yaml     # columnas esperadas del CSV
 │   ├── dq_rules.yaml            # catálogo de reglas de calidad
-│   └── seguridad_rectores.csv   # NO versionar con datos reales
+│   ├── seguridad_rectores.example.csv  # cuentas del tenant de ensayo (versionado, ADR-0019)
+│   └── seguridad_rectores.csv   # rectores reales: NO versionar
 ├── data/                        # NO versionado (.gitignore)
 │   ├── landing/  bronze/  silver/  gold/  metadata/
 ├── docs/
@@ -1049,7 +1051,7 @@ Percentil 75 Colegio = PERCENTILEX.INC ( fact_resultado, fact_resultado[puntaje_
 - Un `.pbix` distribuido localmente **no está protegido por RLS**: quien lo abre en Desktop es autor y ve todos los datos. Por tanto, el consumo seguro se realiza exclusivamente a través de Power BI Service.
 - RLS restringe filas, no columnas (para columnas: OLS).
 - **Riesgo de divulgación por diferencia:** promedio distrital + promedio propio + n permiten inferir el promedio conjunto del resto; con 16 colegios el riesgo baja pero no desaparece en cortes pequeños. Se controla con la regla de supresión de §15.6 (`n_colegios` ≥ 3 en agregados comparativos).
-- Usuarios RLS de prueba: cuentas ficticias (dominio reservado `example.org`), una por cada uno de los 16 colegios + una no registrada.
+- Usuarios RLS de prueba: cuentas creadas en el tenant de ensayo `aldinti.onmicrosoft.com`, una por cada uno de los 16 colegios, una con dos colegios (`rector.multi`) y una no registrada. **El Service no admite UPN ficticios** (`example.org`) para asignar roles: deben existir en el directorio (ADR-0019).
 
 ### 15.6 Agregación y supresión de grupos pequeños (requisito confirmado por el usuario)
 **Requisito:** el dashboard operativo **agrega o suprime** los grupos pequeños. Evidencia: en el perfilamiento, la combinación colegio + año + sexo + estrato + grupo deja grupos de 1 estudiante (v1: 28,5 % de filas en grupos con k < 5).
@@ -1232,7 +1234,7 @@ Escalas **confirmadas por el usuario**: áreas 0–100 y Global 0–500. Son los
 7. **Backups:** Bronze raw + clave HMAC respaldados por separado; retención *Pendiente de definición*.
 8. **Parquet:** Silver/Gold sin PII; permisos de lectura limitados.
 9. **`.pbix`:** contiene datos importados → no versionar en git, no compartir como mecanismo de "seguridad RLS"; preferir `.pbip` sin caché de datos para versionado.
-10. **Tabla de seguridad:** contiene correos (dato personal) → no versionar el real; versionar solo `seguridad_rectores.example.csv` con cuentas ficticias.
+10. **Tabla de seguridad:** contiene correos (dato personal) → `seguridad_rectores.csv` con rectores reales **no se versiona**; se versiona solo `seguridad_rectores.example.csv` con las cuentas de prueba del tenant de ensayo, que no identifican a ninguna persona y se dan de baja al terminar el periodo de prueba (ADR-0019).
 11. **Grupos pequeños:** agregación y supresión (primaria y complementaria) en Gold y en el dashboard operativo (§15.6), `k_min` = 5 por defecto.
 12. **Notebooks:** limpiar salidas (`nbstripout` — **Recomendación técnica adicional**).
 12. **Revisión normativa** (tratamiento de datos personales de menores/estudiantes): **actividad pendiente de validación jurídica**.
@@ -1349,6 +1351,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | 005 | Columnas de partición en BI | Derivar de ruta, duplicar en archivo, BI lee tablas sin partición | **Duplicar en archivo (`WRITE_PARTITION_COLUMNS true`)** — `docs/adr/0005-columnas-particion-power-bi.md` | Spike F4: DuckDB no las escribe por defecto | Power BI no parsea rutas; hive sigue funcionando | Dos columnas redundantes | F4, F6 |
 | 017 | Claves sustitutas | `row_number()` por clave natural, hash MD5 | **MD5 estable** — `docs/adr/0017-claves-sustitutas-estables.md` | `row_number()` cambia claves al agregar colegios | Estables para RLS y cargas nuevas | Colisión teórica (verificada) | F4, F6, F7 |
 | 018 | Modelo del dashboard operativo | Reutilizar modelo F6 ocultando hechos, modelo propio solo con agregados | **Modelo propio solo con agregados** — `docs/adr/0018-modelo-operativo-solo-agregados.md` | Un Viewer con Build/Analizar en Excel accede a tablas ocultas | Imposible llegar a microdatos | Dos modelos que mantener | F7, despliegue |
+| 019 | Identidades de prueba de RLS | Cuentas ficticias `example.org`, cuentas del tenant de ensayo, cuentas reales de rectores | **Cuentas del tenant de ensayo `aldinti.onmicrosoft.com`** — `docs/adr/0019-cuentas-rls-en-tenant-de-pruebas.md` | El Service no admite UPN inexistentes al asignar roles | RLS validable como *Viewer* en el Service | El repositorio versiona correos de ensayo; hay que darlos de baja al final | F7, despliegue |
 | 006 | RLS | Relación bidireccional (Objetivos), tabla desconectada + `IN`, roles estáticos por colegio | **Tabla desconectada + filtro en dim_colegio** | Evita bidireccional; dinámico | Un rol para todos | DAX algo más complejo | F7 |
 | 007 | Benchmark distrital bajo RLS | `ALL()` (Objetivos), tabla agregada | **Tabla agregada no filtrada** | `ALL()` no puede quitar filtros RLS | Correcto bajo RLS | Riesgo divulgación (R15) | F7 |
 | 008 | Ridge vs XGBoost | Solo uno | **Ambos + baseline**, regla de parsimonia | Requisito O4; comparación honesta | Interpretabilidad + no linealidad | Más cómputo (irrelevante aquí) | F8 |
@@ -1394,7 +1397,7 @@ pytest -q
 ## 30. Checklist final de puesta en producción
 - [ ] Entorno instalable desde `requirements.txt` en máquina limpia
 - [ ] Clave HMAC custodiada y respaldada fuera del repo
-- [ ] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos reales
+- [ ] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos de rectores reales (las cuentas del tenant de ensayo sí se versionan, ADR-0019)
 - [ ] Pipeline E2E código 0; re-ejecución idéntica
 - [ ] 100 % reglas DQ bloqueantes PASS; informe archivado
 - [ ] Silver/Gold/Power BI sin PII (test DQ-PRI-001)

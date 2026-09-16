@@ -25,7 +25,9 @@
 1. **Zona Restringida (Confidencial / PII):**
    - Carpeta `data/bronze/` y archivos raw.
    - Variable de entorno `SABER11_HMAC_KEY`.
-   - Tabla real de asignación de directores `seguridad_rectores.csv`.
+   - Tabla real de asignación de directores `config/seguridad_rectores.csv` (correos de rectores).
+     No aplica a `config/seguridad_rectores.example.csv`, que contiene cuentas de prueba del tenant de
+     ensayo y sí se versiona (ADR-0019).
    - *Regla:* Excluidos de Git, acceso restringido localmente.
 
 2. **Zona Interna (Gobernada):**

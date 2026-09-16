@@ -24,7 +24,7 @@ Analisis_Saber11/
 │   ├── settings.yaml
 │   ├── source_contract.yaml
 │   ├── dq_rules.yaml
-│   └── seguridad_rectores.example.csv   # ficticio; el real (seguridad_rectores.csv) no se versiona
+│   └── seguridad_rectores.example.csv   # cuentas de prueba del tenant de ensayo (ADR-0019); el de rectores reales (seguridad_rectores.csv) no se versiona
 ├── data/                    # Zona de datos (Ignorada por Git)
 │   ├── landing/             # CSV de entrada sin procesar
 │   ├── bronze/              # Copia inmutable + Parquet VARCHAR

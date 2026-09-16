@@ -186,8 +186,10 @@ Comparativo distrital sin relación con `dim_colegio` (RLS no lo filtra). Dimens
 
 ### `seguridad_rectores`
 
-Fuente: `config/seguridad_rectores.csv` (real, **no versionado**) o, si no existe, `config/seguridad_rectores.example.csv`
-(cuentas ficticias `example.org`). Columnas de la fuente: `email_rector`, `nombre_colegio`. `run_log` registra cuál se usó.
+Fuente: `config/seguridad_rectores.csv` (rectores reales, **no versionado**) o, si no existe,
+`config/seguridad_rectores.example.csv` (cuentas de prueba creadas en el tenant de ensayo
+`aldinti.onmicrosoft.com`, versionadas; ADR-0019). Columnas de la fuente: `email_rector`, `nombre_colegio`.
+`run_log` registra cuál se usó.
 
 | Columna | Tipo | Descripción | Origen / regla |
 |---|---|---|---|

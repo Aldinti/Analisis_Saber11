@@ -30,8 +30,8 @@ lakehouse:
   gold_security: "seguridad_rectores"
 
 security:
-  source_file: "config/seguridad_rectores.csv"          # real: correos de rectores (NO versionar)
-  example_file: "config/seguridad_rectores.example.csv"  # ficticio: se usa si no existe el real
+  source_file: "config/seguridad_rectores.csv"          # producción: correos de rectores reales (NO versionar)
+  example_file: "config/seguridad_rectores.example.csv"  # pruebas: cuentas del tenant de ensayo (ADR-0019); se usa si no existe el anterior
 
 privacy:
   k_min: 5

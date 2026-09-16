@@ -21,6 +21,7 @@ data/
 config/seguridad_rectores.csv
 !tests/fixtures/*.csv
 !reports/bi/*.csv
+!reports/ml/*.csv
 *.tmp
 
 # Secretos y credenciales
@@ -29,10 +30,9 @@ config/seguridad_rectores.csv
 *.key
 *.pem
 
-# Modelos binarios grandes
-models/**/*.joblib
-models/**/*.bin
-models/**/*.onnx
+# Artefactos de modelos por run_id: se regeneran con `run --stage ml`.
+# La evidencia versionada vive en reports/ml/ (informe y métricas por pliegue).
+models/
 
 # Power BI (Archivos locales con datos en caché)
 *.pbix

@@ -44,3 +44,4 @@ ml:
   cv_splits: 5
   cv_group_col: "nombre_colegio"
   random_state: 20260913
+  colegios_retenidos: ["ABC", "MNO"]   # nunca vistos en entrenamiento (uno público, uno privado)

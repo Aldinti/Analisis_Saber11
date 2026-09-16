@@ -757,12 +757,23 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 | Objetivo | Cuantificar asociación de factores con puntajes y seleccionar un modelo final |
 | Actividades | 1) Baseline (`DummyRegressor(strategy="mean")`). 2) Ridge/Lasso (`RidgeCV`/`LassoCV` dentro de Pipeline). 3) XGBoost (`XGBRegressor`). 4) Selección de variables (§16.2). 5) Entrenamiento en `Pipeline(ColumnTransformer(OneHotEncoder(handle_unknown="ignore"), StandardScaler), modelo)`. 6) Validación (§16.3). 7) Hiperparámetros (`RandomizedSearchCV` con CV interna). 8) Comparación (tabla + IC bootstrap). 9) Selección del final con regla predefinida |
 | Entrada | `gold.ml_dataset` |
-| Herramientas | scikit-learn, XGBoost, pandas, joblib |
-| Salida / Entregable | `models/<run_id>/{model.joblib, params.json, metrics.json}`, `reports/ml/comparacion_modelos.md` |
+| Herramientas | scikit-learn 1.9.1, XGBoost 3.4.1, pandas, joblib; CLI `run --stage ml` |
+| Salida / Entregable | `models/<run_id>/{model.joblib, params.json, metrics.json, predicciones_test.parquet}` (no versionado: se regenera), `reports/ml/comparacion_modelos.md`, `reports/ml/resultados_cv.csv`, `docs/ml/variables_modelo.md` |
 | Dependencias | F4 (y F5 aprobado) |
 | Criterio de aceptación | Baseline registrado; todos los modelos evaluados con el mismo esquema; test 2024 usado **una sola vez**; métricas `r2`, `rmse` (`root_mean_squared_error`), `mae`; test anti-leakage verde |
 | Riesgos | Leakage; sobreajuste a efectos sintéticos; interpretar resultados ficticios como reales |
 | Mitigación | Reportar contra baseline; controles §18; advertencia S7 en todos los informes |
+
+**Implementación y resultados F8 (cerrada):**
+- **Módulo `src/saber11/ml/`:** `dataset.py` (carga y catálogo de variables), `train.py` (pipelines, CV anidada, CV temporal, colegios retenidos), `evaluate.py` (métricas, bootstrap por colegio, regla §16.4), `experimento.py` (orquestación y artefactos) e `informe.py` (Markdown). Etapa `run --stage ml`, con el mismo patrón de gate que Gold: exige que el Gold vigente tenga su quality gate aprobado (código 5 si no).
+- **Selección de variables automática:** 7 predictoras (`periodo`, `naturaleza_colegio`, `modelo_pedagogico`, `zona`, `sexo`, `anio`, `estrato`); se excluyen por regla el objetivo, `nombre_colegio` (grupo de validación), identificadores, prefijos de fuga (`punt_`, `flag_`, `nivel_`, `pct_`…), constantes y categóricas confundidas con el colegio (H3). El catálogo se publica en `docs/ml/variables_modelo.md`, generado en cada ejecución.
+- **Hallazgo — alias del diseño:** `periodo` queda determinado por `naturaleza_colegio` × `zona` (el generador usó el periodo como generador de la fracción 2^(4-1)). No sesga las predicciones, pero el crédito se reparte entre las tres variables: **no deben interpretarse por separado en F9**. El detector de dependencias funcionales quedó en `dataset.dependencias_funcionales` y lo reporta en cada ejecución.
+- **Resultados (ejecución `20260916T020550Z`):** CV anidada por colegio — baseline 48,22 RMSE (R² −0,093: cada pliegue deja fuera colegios completos), Ridge 41,54, **Lasso 41,42**, XGBoost 41,51. Prueba 2024 (una sola evaluación): Lasso R² 0,250 · RMSE 41,03 · MAE 33,02; mejora sobre el baseline 6,91 puntos con IC 95 % [5,37; 8,54]. En los dos colegios nunca vistos (`ABC`, `MNO`) el modelo mantiene R² 0,258.
+- **Modelo elegido: Lasso** (`alpha` 0,3). XGBoost no mejora a los lineales: los efectos del generador son aditivos, y la búsqueda lo lleva a `max_depth` 2 con fuerte regularización. El techo de R² ≈ 0,25 es el esperado: el resto de la varianza es habilidad individual y ruido por área, que ninguna variable observa.
+- **Regla de selección (§16.4) precisada:** Ridge y Lasso comparten nivel de parsimonia, así que entre ellos desempata el RMSE y no el orden de la lista; el nivel más simple solo se prefiere si queda dentro de 1 error estándar del mejor.
+- **Referencia descartada:** predecir con la media histórica del colegio da R² 0,073 en 2024 — peor que el modelo, pese a usar el colegio, y no generaliza a centros nuevos.
+- **Controles anti-fuga (§18) en código:** `verificar_sin_fuga` rechaza objetivo, grupo y prefijos de fuga en la matriz; `separar_temporal` verifica años disjuntos; todo el preprocesamiento vive dentro del `Pipeline`. Pruebas en `tests/unit/test_ml_no_leakage.py` y reproducibilidad (dos ejecuciones, mismas métricas) en `tests/integration/test_ml_experimento.py`.
+- **Artefactos no versionados:** `models/` se regenera con la etapa; la evidencia que se versiona es `reports/ml/` y `docs/ml/`.
 
 ### F9 — Explicabilidad SHAP
 | Campo | Contenido |
@@ -1290,8 +1301,8 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E14 | Catálogo DAX | F6–F7 | MD | Medidas (generado desde TMDL) | Descritas, validadas y sincronizadas por prueba |
 | E15 | Dashboard operativo + RLS | F7 | PBIP (TMDL + PBIR) | Modelo solo con agregados, roles `Rol_Rector`/`Rol_Direccion`, 3 páginas | RLS-01..11 PASS; 13/13 KPIs = SQL |
 | E16 | Matriz de pruebas RLS | F7 | MD + CSV (evidencias DAX) | Esperado, pre-validación DAX y resultado "Ver como" | 100 % aprobado |
-| E17 | Modelos entrenados | F8 | joblib/JSON | Baseline, Ridge, Lasso, XGB | Métricas registradas |
-| E18 | Informe comparación de modelos | F8 | MD | Tabla + IC | Regla de selección aplicada |
+| E17 | Modelos entrenados | F8 | joblib/JSON | Baseline, Ridge, Lasso, XGB con CV anidada por colegio | Métricas registradas en `models/<run_id>/metrics.json`; modelo elegido Lasso |
+| E18 | Informe comparación de modelos | F8 | MD + CSV | `reports/ml/comparacion_modelos.md` y `resultados_cv.csv`: CV, robustez temporal, prueba 2024 con IC bootstrap | Regla §16.4 aplicada y documentada |
 | E19 | Gráficos y valores SHAP | F9 | PNG/Parquet | Global/local | Aditividad verificada |
 | E20 | Interpretación SHAP | F9 | MD | Lectura y límites | Incluye advertencia causalidad y H3 |
 | E21 | Informe de sesgos | F10 | CSV/MD | Subgrupos | n e IC por grupo |
@@ -1405,7 +1416,7 @@ pytest -q
 - [x] RLS-01..11 PASS con evidencias (F7, `tests/rls/casos_rls.md`); limitación Desktop comunicada
 - [ ] Agregación/supresión de grupos pequeños verificada (DQ-PRI-002/003, `k_min` documentado)
 - [ ] Publicación en Power BI Service / Fabric (Trial 60 días) configurada con roles Viewer
-- [ ] Modelos comparados vs baseline; tests anti-leakage verdes
+- [x] Modelos comparados vs baseline (F8: mejora 6,91 RMSE, IC [5,37; 8,54]); tests anti-leakage verdes
 - [ ] SHAP con advertencia de no causalidad y limitación H3
 - [ ] Informe de sesgos revisado
 - [ ] Manuales técnico y de usuario entregados

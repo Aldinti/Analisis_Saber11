@@ -13,6 +13,8 @@ annotation __PBI_TimeIntelligenceEnabled = 0
 
 annotation PBI_ProTooling = ["MCP-PBIModeling","DevMode"]
 
+annotation PBI_QueryOrder = ["dim_colegio","agg_operativo_colegio","agg_benchmark_distrito","seguridad_rectores","RutaGold"]
+
 ref table dim_colegio
 ref table agg_operativo_colegio
 ref table agg_benchmark_distrito

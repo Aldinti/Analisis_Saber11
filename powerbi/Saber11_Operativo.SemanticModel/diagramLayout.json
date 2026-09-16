@@ -1,0 +1,113 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 751.920980798575,
+            "y": 0
+          },
+          "nodeIndex": "_Medidas",
+          "nodeLineageTag": "c460995a-410c-4905-b5e6-7c5430168c7b",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 0,
+            "y": 0
+          },
+          "nodeIndex": "agg_benchmark_distrito",
+          "nodeLineageTag": "3868bab2-e1d4-43b4-b320-d6cbb97dc089",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 471.8698613175219,
+            "y": 176.98087582308847
+          },
+          "nodeIndex": "agg_operativo_colegio",
+          "nodeLineageTag": "6e01a2d4-26b3-4ea1-8fc8-d328bc15eb1e",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 172.2004811572011,
+            "y": 342.18146224354695
+          },
+          "nodeIndex": "dim_anio",
+          "nodeLineageTag": "281d41e1-61ca-4cee-a71f-bc3fcfb63642",
+          "size": {
+            "height": 200,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 354.10574560514124,
+            "y": -3.8505653170622054
+          },
+          "nodeIndex": "dim_area_operativa",
+          "nodeLineageTag": "65eb58d1-08bf-4679-af3d-54c5e2cf6d22",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 758.9209807985751,
+            "y": 383.90290432855636
+          },
+          "nodeIndex": "dim_colegio",
+          "nodeLineageTag": "0811623e-4820-41f2-9680-c0d7dca04310",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 481.37554012474675,
+            "y": 500.95145216427818
+          },
+          "nodeIndex": "seguridad_rectores",
+          "nodeLineageTag": "deed5bbb-ad1f-4003-ab8e-2d4e15fce49e",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "Todas las tablas",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "Todas las tablas",
+  "defaultDiagram": "Todas las tablas"
+}

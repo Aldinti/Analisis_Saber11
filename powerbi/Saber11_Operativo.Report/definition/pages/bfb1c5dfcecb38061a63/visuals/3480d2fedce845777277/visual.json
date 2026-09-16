@@ -46,6 +46,19 @@
             }
           }
         }
+      ],
+      "labels": [
+        {
+          "properties": {
+            "fontFamily": {
+              "expr": {
+                "Literal": {
+                  "Value": "'''Arial Black'''"
+                }
+              }
+            }
+          }
+        }
       ]
     },
     "visualContainerObjects": {

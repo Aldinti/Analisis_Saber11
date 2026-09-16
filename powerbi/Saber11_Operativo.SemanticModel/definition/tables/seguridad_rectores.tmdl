@@ -22,3 +22,7 @@ table seguridad_rectores
 				in
 				    Tipos
 
+	annotation PBI_NavigationStepName = Navegación
+
+	annotation PBI_ResultType = Table
+

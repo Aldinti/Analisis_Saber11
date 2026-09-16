@@ -2,3 +2,5 @@
 expression RutaGold = "C:\Users\aldin\Documents\Maestria\Sem_3\Seminario\Analisis_Saber11\data\gold" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
 	lineageTag: c86b5115-5e58-40b2-82b4-a978542f170c
 
+	annotation PBI_ResultType = Text
+

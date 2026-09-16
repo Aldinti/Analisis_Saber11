@@ -34,6 +34,7 @@ Analisis_Saber11/
 ├── docs/                    # Plan maestro, ADRs y gobernanza
 │   ├── PLAN_MAESTRO.md
 │   ├── operacion.md             # manual de operación del pipeline
+│   ├── pruebas.md               # qué cubre la suite y qué queda manual
 │   ├── ml/variables_modelo.md   # catálogo de predictoras y exclusiones (generado por --stage ml)
 │   ├── data_classification.md
 │   └── adr/                 # Decisiones arquitectónicas registradas
@@ -44,7 +45,7 @@ Analisis_Saber11/
 ├── scripts/                 # Scripts auxiliares (ej. generación ortogonal F1b)
 ├── sql/                     # Transformaciones SQL por capa
 ├── src/saber11/             # Código modular del pipeline
-├── tests/                   # Pruebas unitarias, de contrato, integración y RLS
+├── tests/                   # unit, data (artefactos publicados), integration, bi y rls
 ├── tasks.ps1                # Tareas: setup, run, test, lint, clean-tmp
 ├── pyproject.toml           # Configuración de herramientas
 ├── requirements.in          # Dependencias directas
@@ -83,6 +84,7 @@ Analisis_Saber11/
    ```powershell
    .\.venv\Scripts\pytest.exe
    ```
+   266 pruebas (unitarias, de datos publicados, de integración, de BI y de reproducibilidad). La suite falla si la cobertura baja del 80 %. Qué cubre cada carpeta y qué queda fuera: [`docs/pruebas.md`](docs/pruebas.md).
 
 5. **Ejecutar el pipeline.** La cadena completa, de un comando:
    ```powershell

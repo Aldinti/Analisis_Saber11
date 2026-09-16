@@ -837,6 +837,14 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 ### F12 — Pruebas
 Detalle en §22. **Dependencias:** transversal; consolidación tras F11. **Aceptación:** `pytest` verde; cobertura ≥ 80 % en `src/saber11/` (**Recomendación técnica adicional**); matriz RLS 100 %.
 
+**Implementación y resultados F12 (cerrada):** 266 pruebas verdes, cobertura **94 %**, ≈ 7 min.
+- **Hueco cerrado — `tests/data/`:** la fila «Datos» de §22 no tenía pruebas. Ahora son 52, y se ejecutan contra los artefactos **publicados** en `data/` (se omiten si no hay datos): contrato y tipos de Silver, cuadre `Silver + rechazos = Bronze`, rangos y dominios cerrados, fórmula del Global, integridad del estrella, particiones Hive con `anio`/`periodo` dentro del archivo, promedios Gold = Silver y supresión efectiva de grupos pequeños.
+- **Privacidad verificable, no declarada:** `tests/data/test_no_pii.py` comprueba que ni Silver ni Gold llevan columnas de identificación directa, que el seudónimo no sale de Silver, que solo `seguridad_rectores` contiene correos y que **ningún informe de `reports/` o `docs/` reproduce nombres o números de documento**, contrastando contra la copia original de Bronze.
+- **Reproducibilidad de datos (no solo de métricas):** `tests/integration/test_reproducible.py` compara un *hash del contenido* de Silver y de las 11 tablas Gold entre dos ejecuciones —independiente del orden físico de las filas, porque el Parquet puede diferir byte a byte sin que el dato cambie— y confirma que las claves sustitutas no se desplazan (ADR-0017).
+- **Control anti-fuga reforzado:** nueva prueba de que el `StandardScaler` se ajusta solo con el entrenamiento (la media de `anio` es la del entrenamiento, no la del conjunto completo), que era la fila `test_pipeline_fit_only_train.py` de §22.
+- **El umbral de cobertura es ejecutable:** `--cov-fail-under=80` en `pyproject.toml`; la suite se pone roja si la cobertura baja del criterio del plan, en vez de depender de que alguien lo mire.
+- **Trazabilidad publicada:** `docs/pruebas.md` mapea cada fila de §22 con los archivos que la cubren, describe qué comprueba cada carpeta, deja explícito lo que **no** cubre la suite (renderizado en Power BI, RLS con el rol real, publicación en el Service, validez externa de los datos ficticios) y fija las convenciones para añadir pruebas.
+
 ### F13 — Seguridad
 Detalle en §21. **Dependencias:** transversal; revisión final tras F11. **Aceptación:** checklist de seguridad completo; escaneo de repo sin PII ni secretos (`git grep -n "nroDoc\|Nombre"` sobre artefactos distribuibles, `detect-secrets` opcional).
 
@@ -1335,7 +1343,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E20 | Interpretación SHAP | F9 | MD | `reports/shap/interpretacion.md`: método, aditividad, importancia, recuperación de efectos y límites | Incluye la advertencia de causalidad, los alias del diseño y la de datos ficticios |
 | E21 | Informe de sesgos | F10 | CSV/MD/PNG | 10 dimensiones con n, RMSE, MAE, sesgo, R², desviación típica e IC; brechas con IC y alertas | n e IC por grupo; grupos con n < 30 marcados no concluyentes |
 | E22 | Pipeline CLI | F11 | Py/PS1/MD | `run` completo con `--from`/`--config`, `tasks.ps1` y `docs/operacion.md` | E2E código 0 y re-ejecución con métricas idénticas |
-| E23 | Suite de pruebas | F12 | Py | §22 | Verde |
+| E23 | Suite de pruebas | F12 | Py/MD | 266 pruebas en unit, data, integration, bi y rls + `docs/pruebas.md` | Verde; cobertura 94 % con umbral 80 % exigido por la propia suite |
 | E24 | Checklist seguridad | F13 | MD | §21 | Completo |
 | E25 | Manual técnico | F14 | MD | Arquitectura, operación | Tercero reproduce |
 | E26 | Manual de usuario | F14 | MD/PDF | Uso de dashboards | Validado por usuario |

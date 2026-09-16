@@ -50,6 +50,20 @@ def test_xgboost_no_escala_las_numericas(variables):
     assert transformadores["num"] == "passthrough"
 
 
+def test_el_escalado_se_ajusta_solo_con_el_entrenamiento(marco_ml, variables):
+    """§18: ningún estadístico del preprocesamiento puede mirar el conjunto de prueba."""
+    df = marco_ml()
+    entrena, _ = ds.separar_temporal(df, 2024)
+    pipeline = tr.construir_pipeline(tr.ESPECIFICACIONES["ridge"], variables, semilla=1)
+    pipeline.fit(tr.matriz(entrena, variables), entrena["puntaje_global"])
+    escalador = {n: t for n, t, _ in pipeline.named_steps["preparacion"].transformers_}["num"]
+    medias = dict(zip(variables.numericas, escalador.mean_, strict=True))
+    assert medias["anio"] == pytest.approx(entrena["anio"].mean())
+    assert medias["anio"] != pytest.approx(df["anio"].mean()), (
+        "la media incluye el año de prueba: el escalado se ajustó con todo el conjunto"
+    )
+
+
 def test_categoria_nueva_en_prediccion_no_rompe_el_modelo(marco_ml, variables):
     """`handle_unknown="ignore"`: un colegio nuevo puede traer una categoría no vista."""
     entrena = marco_ml()

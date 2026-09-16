@@ -823,9 +823,16 @@ Decisiones de implementación F4: claves sustitutas MD5 estables en lugar de `ro
 | Objetivo | Pipeline reproducible de un comando |
 | Actividades | CLI `python -m saber11.pipeline run --config config/settings.yaml [--stage ...]`; etapas ingest→validate→bronze→silver→dq→gold→ml→shap→fairness→artefactos; cada etapa idempotente; logs estructurados; `Makefile`/`tasks.ps1` |
 | Herramientas | Python (`argparse`/`typer`), logging |
-| Salida / Entregable | `src/saber11/pipeline.py`, `tasks.ps1`, `docs/operacion.md` |
+| Salida / Entregable | `src/saber11/pipeline.py` (cadena completa, `--from`, `--config`), `tasks.ps1`, `docs/operacion.md`, `reports/operacion/ultima_ejecucion.md` |
 | Dependencias | F2–F10 |
 | Criterio de aceptación | Ejecución desde cero en entorno limpio termina con código 0; re-ejecución produce métricas idénticas (misma semilla, mismos datos) |
+
+**Implementación y resultados F11 (cerrada):**
+- **Un comando:** `python -m saber11.pipeline run` ejecuta la cadena del §23 (`validate-source → bronze → silver → dq-silver → gold → dq-gold → ml → shap → fairness`), se detiene en la primera etapa que falla y devuelve su código. `--from <etapa>` retoma desde un punto y `--stage <etapa>` sigue ejecutando una sola; ambos son excluyentes. `--config` permite apuntar a otro `settings.yaml`.
+- **Trazabilidad de la corrida completa:** una fila `pipeline` en el `run_log` con el código, la duración de cada etapa y la ruta del manifiesto, más `reports/operacion/ultima_ejecucion.md` (se sobrescribe; el histórico vive en el `run_log`).
+- **`tasks.ps1`:** `setup` (venv, dependencias y `.env` con clave HMAC nueva, sin pisar una existente), `run` (`-Stage`, `-From`, `-Layer`), `test`, `lint` y `clean-tmp`. Fija `PYTHONPATH=src` y usa el intérprete de `.venv`.
+- **`docs/operacion.md`:** qué hace cada etapa, los seis códigos de salida y qué hacer con cada uno, el procedimiento de actualización con datos nuevos, dónde queda cada artefacto, reproducibilidad y los problemas frecuentes ya vistos en las fases anteriores (Excel bloqueando el CSV, finales de línea mezclados en el CSV de seguridad, clave HMAC ausente).
+- **Criterio de aceptación comprobado:** ejecución real de extremo a extremo con código 0 en 82 s sobre los datos del proyecto, y prueba automática que crea un proyecto vacío con un CSV en formato de fuente, corre la cadena entera, verifica los artefactos y la repite: Bronze se omite por idempotencia y las métricas de ML son idénticas (`tests/integration/test_pipeline_completo.py`).
 
 ### F12 — Pruebas
 Detalle en §22. **Dependencias:** transversal; consolidación tras F11. **Aceptación:** `pytest` verde; cobertura ≥ 80 % en `src/saber11/` (**Recomendación técnica adicional**); matriz RLS 100 %.
@@ -1327,7 +1334,7 @@ contract → bronze → silver → dq_gate → gold → ml_train → ml_evaluate
 | E19 | Gráficos y valores SHAP | F9 | PNG/Parquet/CSV | 9 figuras (global, enjambre, dependencia, 3 casos, comparación), `shap_values.parquet` y `recuperacion_efectos.csv` | Aditividad verificada (≤ 1e-3) |
 | E20 | Interpretación SHAP | F9 | MD | `reports/shap/interpretacion.md`: método, aditividad, importancia, recuperación de efectos y límites | Incluye la advertencia de causalidad, los alias del diseño y la de datos ficticios |
 | E21 | Informe de sesgos | F10 | CSV/MD/PNG | 10 dimensiones con n, RMSE, MAE, sesgo, R², desviación típica e IC; brechas con IC y alertas | n e IC por grupo; grupos con n < 30 marcados no concluyentes |
-| E22 | Pipeline CLI | F11 | Py/PS1 | Ejecución de un comando | E2E código 0 |
+| E22 | Pipeline CLI | F11 | Py/PS1/MD | `run` completo con `--from`/`--config`, `tasks.ps1` y `docs/operacion.md` | E2E código 0 y re-ejecución con métricas idénticas |
 | E23 | Suite de pruebas | F12 | Py | §22 | Verde |
 | E24 | Checklist seguridad | F13 | MD | §21 | Completo |
 | E25 | Manual técnico | F14 | MD | Arquitectura, operación | Tercero reproduce |
@@ -1430,7 +1437,7 @@ pytest -q
 - [ ] Entorno instalable desde `requirements.txt` en máquina limpia
 - [ ] Clave HMAC custodiada y respaldada fuera del repo
 - [ ] `git ls-files` sin datos, `.pbix` con datos, `.env` ni correos de rectores reales (las cuentas del tenant de ensayo sí se versionan, ADR-0019)
-- [ ] Pipeline E2E código 0; re-ejecución idéntica
+- [x] Pipeline E2E código 0; re-ejecución idéntica (F11, comprobado en ejecución real y en prueba automática)
 - [ ] 100 % reglas DQ bloqueantes PASS; informe archivado
 - [ ] Silver/Gold/Power BI sin PII (test DQ-PRI-001)
 - [x] KPIs del dashboard estratégico validados contra SQL (F6, 21/21)

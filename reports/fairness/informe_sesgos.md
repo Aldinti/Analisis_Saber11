@@ -3,7 +3,7 @@
 > ⚠️ Los datos son ficticios (plan §4, supuesto S7): estos resultados validan el pipeline, no describen la realidad educativa.
 > Una brecha de error indica que el modelo **funciona peor** para ese grupo; no que el grupo tenga peores resultados.
 
-Ejecución `20260916T051635Z-ab2240cc` sobre el modelo de F8 `20260916T020550Z-b1dab5a8` (Lasso).
+Ejecución `20260916T052912Z-d6cc0e24` sobre el modelo de F8 `20260916T052758Z-1edef148` (Lasso).
 
 ## 1. Qué se evalúa
 

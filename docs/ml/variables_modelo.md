@@ -1,6 +1,6 @@
 # Catálogo de variables del modelo (F8)
 
-> Generado por `saber11.ml` en la ejecución `20260916T020550Z-b1dab5a8`. No editar a mano.
+> Generado por `saber11.ml` en la ejecución `20260916T052758Z-1edef148`. No editar a mano.
 
 Objetivo: `puntaje_global` · Variable de agrupamiento en la validación: `nombre_colegio`.
 

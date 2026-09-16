@@ -33,6 +33,7 @@ Analisis_Saber11/
 │   └── metadata/            # Logs de ejecución y calidad (run_log)
 ├── docs/                    # Plan maestro, ADRs y gobernanza
 │   ├── PLAN_MAESTRO.md
+│   ├── operacion.md             # manual de operación del pipeline
 │   ├── ml/variables_modelo.md   # catálogo de predictoras y exclusiones (generado por --stage ml)
 │   ├── data_classification.md
 │   └── adr/                 # Decisiones arquitectónicas registradas
@@ -44,6 +45,7 @@ Analisis_Saber11/
 ├── sql/                     # Transformaciones SQL por capa
 ├── src/saber11/             # Código modular del pipeline
 ├── tests/                   # Pruebas unitarias, de contrato, integración y RLS
+├── tasks.ps1                # Tareas: setup, run, test, lint, clean-tmp
 ├── pyproject.toml           # Configuración de herramientas
 ├── requirements.in          # Dependencias directas
 ├── requirements.txt         # Lockfile determinista
@@ -82,7 +84,15 @@ Analisis_Saber11/
    .\.venv\Scripts\pytest.exe
    ```
 
-5. **Ejecutar el pipeline** (etapas implementadas: `bronze`, `silver`, `dq`, `gold`, `ml`, `shap`, `fairness`):
+5. **Ejecutar el pipeline.** La cadena completa, de un comando:
+   ```powershell
+   .\tasks.ps1 run              # validate-source -> bronze -> silver -> dq -> gold -> dq -> ml -> shap -> fairness
+   .\tasks.ps1 run -From gold   # retomar desde una etapa
+   .\tasks.ps1 run -Stage ml    # una sola etapa
+   ```
+   Se detiene en la primera etapa que falle y devuelve su código; el resumen queda en `reports/operacion/ultima_ejecucion.md` y en `data/metadata/run_log.parquet`. Otras tareas: `setup`, `test`, `lint`, `clean-tmp`. Detalle de operación en [`docs/operacion.md`](docs/operacion.md).
+
+   Etapa por etapa, sin `tasks.ps1`:
    ```powershell
    $env:PYTHONPATH = "src"
    .\.venv\Scripts\python.exe -m saber11.pipeline validate-source      # contrato del CSV de data/landing

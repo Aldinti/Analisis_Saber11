@@ -3,7 +3,7 @@
 > ⚠️ Los datos son ficticios (plan §4, supuesto S7): estos resultados validan el pipeline, no describen la realidad educativa.
 > **SHAP explica el comportamiento del modelo; no demuestra causalidad.**
 
-Ejecución `20260916T025755Z-b720af2d` sobre el modelo de F8 `20260916T020550Z-b1dab5a8`.
+Ejecución `20260916T052908Z-06492e43` sobre el modelo de F8 `20260916T052758Z-1edef148`.
 
 ## 1. Qué se explicó
 

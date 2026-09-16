@@ -2,7 +2,7 @@
 
 > ⚠️ Los datos son ficticios (plan §4, supuesto S7): estos resultados validan el pipeline, no describen la realidad educativa.
 
-Ejecución `20260916T020550Z-b1dab5a8` · semilla `20260913` · objetivo `puntaje_global`.
+Ejecución `20260916T052758Z-1edef148` · semilla `20260913` · objetivo `puntaje_global`.
 
 ## 1. Conjunto y esquema de validación
 

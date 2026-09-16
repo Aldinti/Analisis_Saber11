@@ -1,25 +1,38 @@
 """CLI del pipeline Saber 11.
 
 Uso (desde la raíz del proyecto, con el entorno .venv):
+    python -m saber11.pipeline run                          # cadena completa (plan §23)
+    python -m saber11.pipeline run --from gold              # desde una etapa en adelante
+    python -m saber11.pipeline run --stage silver           # una sola etapa
+    python -m saber11.pipeline run --stage dq --layer gold
     python -m saber11.pipeline validate-source
-    python -m saber11.pipeline run --stage bronze
-    python -m saber11.pipeline run --stage silver [--ingest-id <run_id>]
-    python -m saber11.pipeline run --stage dq [--layer silver|gold]
-    python -m saber11.pipeline run --stage gold
-    python -m saber11.pipeline run --stage ml
-    python -m saber11.pipeline run --stage shap
-    python -m saber11.pipeline run --stage fairness
 
-Solo están implementadas las etapas ya ejecutadas en el plan; las demás informan su fase.
+Etapas de la cadena completa, en orden:
+    validate-source → bronze → silver → dq-silver → gold → dq-gold → ml → shap → fairness
+
+La ejecución se detiene en la primera etapa que falle y devuelve su código de salida:
+    0 éxito · 1 fallo técnico · 2 contrato incumplido · 3 etapa no implementada
+    4 quality gate rechazado · 5 etapa bloqueada porque la anterior no está disponible o aprobada
+
+Con `--config` se puede apuntar a otro `settings.yaml` (por ejemplo, para una copia de prueba).
 """
 from __future__ import annotations
 
 import argparse
 import sys
+import time
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from saber11.config import PROJECT_ROOT, get_hmac_key, get_settings, get_source_contract
+from saber11.config import (
+    PROJECT_ROOT,
+    get_hmac_key,
+    get_settings,
+    get_source_contract,
+    load_yaml,
+)
 from saber11.ingest.bronze import escribir_reporte_contrato, ingerir_bronze
 from saber11.ingest.contract import ContratoFuenteError, validar_fuente
 from saber11.logging_utils import setup_logger
@@ -260,6 +273,121 @@ def ejecutar_fairness(settings: dict[str, Any], raiz: Path) -> int:
     return 0
 
 
+# ---------------------------------------------------------------- ejecución completa (F11)
+#: Cadena del plan §23. Cada etapa recibe (settings, contrato, raíz) y devuelve su código.
+SECUENCIA: tuple[tuple[str, Any], ...] = (
+    ("validate-source", lambda s, c, r: validar_fuente_cli(s, c, r)),
+    ("bronze", lambda s, c, r: ejecutar_bronze(s, c, r)),
+    ("silver", lambda s, c, r: ejecutar_silver(s, c, r)),
+    ("dq-silver", lambda s, c, r: ejecutar_dq(s, c, r, "silver")),
+    ("gold", lambda s, c, r: ejecutar_gold(s, c, r)),
+    ("dq-gold", lambda s, c, r: ejecutar_dq(s, c, r, "gold")),
+    ("ml", lambda s, c, r: ejecutar_ml(s, r)),
+    ("shap", lambda s, c, r: ejecutar_shap(s, r)),
+    ("fairness", lambda s, c, r: ejecutar_fairness(s, r)),
+)
+NOMBRES_SECUENCIA: tuple[str, ...] = tuple(nombre for nombre, _ in SECUENCIA)
+
+
+@dataclass
+class ResultadoEtapa:
+    nombre: str
+    codigo: int
+    segundos: float
+
+    @property
+    def exitosa(self) -> bool:
+        return self.codigo == 0
+
+
+def ejecutar_todo(
+    settings: dict[str, Any], contrato: dict[str, Any], raiz: Path, desde: str | None = None
+) -> tuple[int, list[ResultadoEtapa]]:
+    """Ejecuta la cadena completa y se detiene en la primera etapa que falle (plan §23).
+
+    Devuelve el código de la etapa que falló, o 0 si todas terminaron bien. El detalle
+    queda en el `run_log` (etapa `pipeline`) y en un manifiesto legible.
+    """
+    if desde and desde not in NOMBRES_SECUENCIA:
+        raise ValueError(f"Etapa desconocida: {desde}. Opciones: {', '.join(NOMBRES_SECUENCIA)}")
+    inicio_pos = NOMBRES_SECUENCIA.index(desde) if desde else 0
+    run_id = run_log.nuevo_run_id()
+    inicio = run_log.ahora_utc()
+    ruta_log = raiz / settings["paths"]["metadata"] / "run_log.parquet"
+    pendientes = SECUENCIA[inicio_pos:]
+    log.info("Inicio pipeline completo run_id=%s etapas=%d desde=%s", run_id, len(pendientes),
+             desde or NOMBRES_SECUENCIA[0])
+
+    resultados: list[ResultadoEtapa] = []
+    codigo = 0
+    for nombre, ejecutar in pendientes:
+        t0 = time.perf_counter()
+        codigo = ejecutar(settings, contrato, raiz)
+        resultados.append(ResultadoEtapa(nombre, codigo, time.perf_counter() - t0))
+        if codigo != 0:
+            log.error("Pipeline detenido en '%s' con código %d; no se ejecutan las etapas siguientes",
+                      nombre, codigo)
+            break
+
+    manifiesto = _escribir_manifiesto(resultados, settings, raiz, run_id, inicio, codigo, desde)
+    run_log.registrar(ruta_log, run_log.RegistroEjecucion(
+        run_id, "pipeline", "exitoso" if codigo == 0 else "fallido", inicio, run_log.ahora_utc(),
+        filas=len(resultados), git_sha=run_log.git_sha(raiz),
+        detalle={
+            "codigo": codigo,
+            "desde": desde,
+            "etapas": [{"etapa": r.nombre, "codigo": r.codigo, "segundos": round(r.segundos, 2)}
+                       for r in resultados],
+            "manifiesto": manifiesto.relative_to(raiz).as_posix(),
+            "git_con_cambios": run_log.git_con_cambios(raiz),
+        }))
+    total = sum(r.segundos for r in resultados)
+    log.info("Fin pipeline completo: código=%d etapas=%s duración=%.1fs manifiesto=%s", codigo,
+             "/".join(f"{r.nombre}:{r.codigo}" for r in resultados), total,
+             manifiesto.relative_to(raiz))
+    return codigo, resultados
+
+
+def _escribir_manifiesto(
+    resultados: list[ResultadoEtapa],
+    settings: dict[str, Any],
+    raiz: Path,
+    run_id: str,
+    inicio: datetime,
+    codigo: int,
+    desde: str | None,
+) -> Path:
+    """Manifiesto legible de la última ejecución completa (el histórico vive en el run_log)."""
+    destino = raiz / settings["paths"]["reports"] / "operacion"
+    destino.mkdir(parents=True, exist_ok=True)
+    ruta = destino / "ultima_ejecucion.md"
+    estado = "✅ completada" if codigo == 0 else f"❌ detenida (código {codigo})"
+    lineas = [
+        "# Última ejecución del pipeline",
+        "",
+        f"- **run_id:** `{run_id}`",
+        f"- **Inicio (UTC):** {inicio:%Y-%m-%d %H:%M:%S}",
+        f"- **Desde:** `{desde or NOMBRES_SECUENCIA[0]}`",
+        f"- **Resultado:** {estado}",
+        f"- **Duración total:** {sum(r.segundos for r in resultados):.1f} s",
+        "",
+        "| # | Etapa | Código | Segundos |",
+        "|--:|---|--:|--:|",
+    ]
+    for i, r in enumerate(resultados, start=1):
+        lineas.append(f"| {i} | `{r.nombre}` | {r.codigo} | {r.segundos:.1f} |")
+    omitidas = [n for n in NOMBRES_SECUENCIA if n not in {r.nombre for r in resultados}]
+    if omitidas:
+        lineas += ["", "Etapas no ejecutadas: " + ", ".join(f"`{n}`" for n in omitidas) + "."]
+    lineas += [
+        "",
+        "El histórico completo de ejecuciones está en `data/metadata/run_log.parquet`; los informes",
+        "de cada etapa, en `reports/`. Este archivo se sobrescribe en cada ejecución.",
+    ]
+    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    return ruta
+
+
 def validar_fuente_cli(settings: dict[str, Any], contrato: dict[str, Any], raiz: Path) -> int:
     run_id = run_log.nuevo_run_id()
     resultado = validar_fuente(ruta_fuente(settings, raiz), contrato)
@@ -272,19 +400,27 @@ def validar_fuente_cli(settings: dict[str, Any], contrato: dict[str, Any], raiz:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="saber11.pipeline", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--config", type=Path, help="ruta a un settings.yaml alternativo")
     sub = parser.add_subparsers(dest="comando", required=True)
     sub.add_parser("validate-source", help="valida el CSV de landing contra el contrato")
-    run = sub.add_parser("run", help="ejecuta una etapa del pipeline")
-    run.add_argument("--stage", required=True,
-                     choices=["bronze", "silver", "dq", "gold", "ml", "shap", "fairness",
-                              *ETAPAS_PENDIENTES])
+    run = sub.add_parser("run", help="ejecuta la cadena completa o una etapa")
+    run.add_argument("--stage", choices=["bronze", "silver", "dq", "gold", "ml", "shap", "fairness",
+                                         *ETAPAS_PENDIENTES],
+                     help="ejecuta solo esta etapa; si se omite, corre la cadena completa")
+    run.add_argument("--from", dest="desde", choices=NOMBRES_SECUENCIA,
+                     help="arranca la cadena completa en esta etapa")
     run.add_argument("--ingest-id", help="partición Bronze a procesar en silver (por defecto, la vigente)")
     run.add_argument("--layer", choices=["silver", "gold"], default="silver", help="capa evaluada por el quality gate")
     args = parser.parse_args(argv)
 
-    settings, contrato = get_settings(), get_source_contract()
+    settings = load_yaml(args.config) if args.config else get_settings()
+    contrato = get_source_contract()
     if args.comando == "validate-source":
         return validar_fuente_cli(settings, contrato, PROJECT_ROOT)
+    if args.stage and args.desde:
+        parser.error("--stage y --from son excluyentes: una sola etapa o la cadena completa")
+    if not args.stage:
+        return ejecutar_todo(settings, contrato, PROJECT_ROOT, args.desde)[0]
     if args.stage in ETAPAS_PENDIENTES:
         log.error("La etapa '%s' aún no está implementada (fase %s del plan)", args.stage, ETAPAS_PENDIENTES[args.stage])
         return 3
